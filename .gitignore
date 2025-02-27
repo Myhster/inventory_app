@@ -39,10 +39,20 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Android
+android/local.properties
+android/.gradle/
+android/app/build/
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# iOS
+ios/.generated/
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 
 # Other
 .metadata
