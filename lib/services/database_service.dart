@@ -4,6 +4,7 @@ import 'package:inventory_app/models/product.dart';
 
 class DatabaseService {
   Database? _database;
+  Database get database => _database!;
 
   Future<void> initDatabase() async {
     String path = join(await getDatabasesPath(), 'inventory.db');
