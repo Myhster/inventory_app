@@ -15,6 +15,7 @@ class InventoryScreenState extends State<InventoryScreen> {
   late Future<List<Product>> _productsFuture;
   MobileScannerController controller = MobileScannerController();
   String _barcode = "Not scanned yet";
+  bool _hasScanned = false; // Flag für einmaligen Scan
 
   @override
   void initState() {
@@ -76,6 +77,7 @@ class InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _scanAndAddProduct() async {
+    _hasScanned = false; // Reset Flag
     await showDialog(
       context: context,
       builder:
@@ -87,28 +89,37 @@ class InventoryScreenState extends State<InventoryScreen> {
               child: MobileScanner(
                 controller: controller,
                 onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  if (barcodes.isNotEmpty) {
-                    final String barcode = barcodes.first.rawValue ?? "Unknown";
-                    final product = Product(
-                      name: "Item $barcode",
-                      quantity: 1,
-                      category: "Misc",
-                    );
-                    _manager.addProduct(product).then((_) {
-                      setState(() {
-                        _productsFuture = _manager.getProducts();
-                        _barcode = barcode;
+                  if (!_hasScanned) {
+                    // Nur einmal scannen
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty) {
+                      _hasScanned = true;
+                      final String barcode =
+                          barcodes.first.rawValue ?? "Unknown";
+                      final product = Product(
+                        name: "Item $barcode",
+                        quantity: 1,
+                        category: "Misc",
+                      );
+                      _manager.addProduct(product).then((_) {
+                        setState(() {
+                          _productsFuture = _manager.getProducts();
+                          _barcode = barcode;
+                        });
+                        controller.stop(); // Scanner stoppen
+                        Navigator.pop(context); // Dialog schließen
                       });
-                      Navigator.pop(context); // Dialog schließen
-                    });
+                    }
                   }
                 },
               ),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  controller.stop(); // Scanner stoppen
+                  Navigator.pop(context);
+                },
                 child: const Text("Cancel"),
               ),
             ],
