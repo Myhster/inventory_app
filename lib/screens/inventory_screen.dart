@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:inventory_app/models/product.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -12,6 +13,8 @@ class InventoryScreen extends StatefulWidget {
 class InventoryScreenState extends State<InventoryScreen> {
   final InventoryManager _manager = InventoryManager();
   late Future<List<Product>> _productsFuture;
+  MobileScannerController controller = MobileScannerController();
+  String _barcode = "Not scanned yet";
 
   @override
   void initState() {
@@ -23,50 +26,99 @@ class InventoryScreenState extends State<InventoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Inventory")),
-      body: FutureBuilder<List<Product>>(
-        future: _productsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final products = snapshot.data!;
-            return ListView.builder(
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return ListTile(
-                  title: Text(product.name),
-                  subtitle: Text(
-                    "Qty: ${product.quantity} - ${product.category}",
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () async {
-                      await _manager.removeProduct(product.id!);
-                      setState(() {
-                        _productsFuture = _manager.getProducts();
-                      });
+      body: Column(
+        children: [
+          Expanded(
+            child: FutureBuilder<List<Product>>(
+              future: _productsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final products = snapshot.data!;
+                  return ListView.builder(
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return ListTile(
+                        title: Text(product.name),
+                        subtitle: Text(
+                          "Qty: ${product.quantity} - ${product.category}",
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () async {
+                            await _manager.removeProduct(product.id!);
+                            setState(() {
+                              _productsFuture = _manager.getProducts();
+                            });
+                          },
+                        ),
+                      );
                     },
-                  ),
-                );
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("Error: ${snapshot.error}"));
+                }
+                return const Center(child: CircularProgressIndicator());
               },
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text("Barcode: $_barcode"),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addProduct,
-        child: const Icon(Icons.add),
+        onPressed: _scanAndAddProduct,
+        child: const Icon(Icons.camera_alt),
       ),
     );
   }
 
-  Future<void> _addProduct() async {
-    final product = Product(name: 'Test', quantity: 1, category: 'Misc');
-    await _manager.addProduct(product);
-    setState(() {
-      _productsFuture = _manager.getProducts();
-    });
+  Future<void> _scanAndAddProduct() async {
+    await showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Scan Barcode"),
+            content: SizedBox(
+              width: 300,
+              height: 400,
+              child: MobileScanner(
+                controller: controller,
+                onDetect: (capture) {
+                  final List<Barcode> barcodes = capture.barcodes;
+                  if (barcodes.isNotEmpty) {
+                    final String barcode = barcodes.first.rawValue ?? "Unknown";
+                    final product = Product(
+                      name: "Item $barcode",
+                      quantity: 1,
+                      category: "Misc",
+                    );
+                    _manager.addProduct(product).then((_) {
+                      setState(() {
+                        _productsFuture = _manager.getProducts();
+                        _barcode = barcode;
+                      });
+                      Navigator.pop(context); // Dialog schließen
+                    });
+                  }
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }
