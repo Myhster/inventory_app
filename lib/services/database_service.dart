@@ -39,4 +39,34 @@ class DatabaseService {
     );
     return Product.fromMap(maps.first);
   }
+
+  Future<Product?> getProductByName(String name) async {
+    await initDatabase();
+    final maps = await _database!.query(
+      'products',
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+    return maps.isNotEmpty ? Product.fromMap(maps.first) : null;
+  }
+
+  Future<Product?> getProductByBarcode(String barcode) async {
+    await initDatabase();
+    final maps = await _database!.query(
+      'products',
+      where: 'name LIKE ?',
+      whereArgs: ['Item $barcode'],
+    );
+    return maps.isNotEmpty ? Product.fromMap(maps.first) : null;
+  }
+
+  Future<void> updateProductQuantity(int id, int newQuantity) async {
+    await initDatabase();
+    await _database!.update(
+      'products',
+      {'quantity': newQuantity},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }

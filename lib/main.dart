@@ -8,6 +8,15 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: const HomeScreen());
+    return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.teal,
+        appBarTheme: const AppBarTheme(elevation: 2, centerTitle: true),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Colors.tealAccent,
+        ),
+      ),
+      home: const HomeScreen(),
+    );
   }
 }

@@ -5,7 +5,15 @@ class InventoryManager {
   final DatabaseService _dbService = DatabaseService();
 
   Future<void> addProduct(Product product) async {
-    await _dbService.insertProduct(product);
+    final existing = await _dbService.getProductByName(product.name); // Neu
+    if (existing != null) {
+      await _dbService.updateProductQuantity(
+        existing.id!,
+        existing.quantity + product.quantity,
+      );
+    } else {
+      await _dbService.insertProduct(product);
+    }
   }
 
   Future<void> removeProduct(int id) async {
