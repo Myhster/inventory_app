@@ -80,7 +80,7 @@ class ProductList extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _deleteProduct(product),
+              onPressed: () => _deleteProduct(product, context),
             ),
           ],
         ),
@@ -104,8 +104,28 @@ class ProductList extends StatelessWidget {
     }
   }
 
-  Future<void> _deleteProduct(Product product) async {
-    await manager.removeProduct(product.id!);
-    onRefresh();
+  Future<void> _deleteProduct(Product product, BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Delete Product"),
+            content: Text("Are you sure you want to delete '${product.name}'?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Delete"),
+              ),
+            ],
+          ),
+    );
+    if (confirmed == true) {
+      await manager.removeProduct(product.id!);
+      onRefresh();
+    }
   }
 }
