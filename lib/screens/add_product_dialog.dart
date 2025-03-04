@@ -55,8 +55,9 @@ class AddProductDialogState extends State<AddProductDialog> {
                 icon: const Icon(Icons.remove),
                 onPressed: () {
                   int current = int.tryParse(_qtyController.text) ?? 1;
-                  if (current > 1)
+                  if (current > 1) {
                     _qtyController.text = (current - 1).toString();
+                  }
                 },
               ),
               Expanded(
@@ -65,8 +66,9 @@ class AddProductDialogState extends State<AddProductDialog> {
                   decoration: const InputDecoration(labelText: "Quantity"),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
-                    if (value.isEmpty || int.parse(value) < 1)
+                    if (value.isEmpty || int.parse(value) < 1) {
                       _qtyController.text = "1";
+                    }
                   },
                 ),
               ),

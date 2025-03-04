@@ -19,7 +19,6 @@ class InventoryScreenState extends State<InventoryScreen> {
   final InventoryManager _manager = InventoryManager();
   List<Product> _products = [];
   List<Category> _categories = [];
-  String _barcode = "Not scanned yet";
   bool _isLoading = true;
 
   @override
@@ -54,15 +53,15 @@ class InventoryScreenState extends State<InventoryScreen> {
           FloatingActionButton(
             onPressed: _addManualProduct,
             tooltip: "Add Manually",
-            child: const Icon(Icons.add),
             heroTag: "addManual",
+            child: const Icon(Icons.add),
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
             onPressed: _scanAndAddProduct,
             tooltip: "Scan Barcode",
-            child: const Icon(Icons.camera_alt),
             heroTag: "scanBarcode",
+            child: const Icon(Icons.camera_alt),
           ),
         ],
       ),
@@ -93,7 +92,6 @@ class InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _refreshData() async {
-    print('Refreshing data...');
     setState(() => _isLoading = true);
     try {
       _products = await _manager.getProducts();
@@ -102,12 +100,8 @@ class InventoryScreenState extends State<InventoryScreen> {
         await _manager.addCategory(Category(name: 'Unsortiert')); // Fallback
         _categories = await _manager.getCategories();
       }
-      print(
-        'Loaded ${_products.length} products, ${_categories.length} categories',
-      );
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      print('Error refreshing data: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -139,7 +133,6 @@ class InventoryScreenState extends State<InventoryScreen> {
             category: productData.category,
           ),
         );
-        _barcode = scannedBarcode;
         await _refreshData();
       }
     }

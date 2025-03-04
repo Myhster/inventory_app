@@ -26,7 +26,7 @@ class HomeScreenState extends State<HomeScreen> {
     try {
       setState(() => _isLoading = true);
       final categories = await _dbService.getCategories();
-      print('Categories loaded: ${categories.length}'); // Debugging
+
       if (mounted) {
         setState(() {
           _categories = categories;
@@ -34,7 +34,6 @@ class HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      print('Error loading categories: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -74,8 +73,8 @@ class HomeScreenState extends State<HomeScreen> {
           FloatingActionButton(
             onPressed: _addCategory,
             tooltip: "Add Category",
-            child: const Icon(Icons.add),
             heroTag: "addCategory",
+            child: const Icon(Icons.add),
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
@@ -87,8 +86,8 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
             tooltip: "Scan Product",
-            child: const Icon(Icons.camera_alt),
             heroTag: "scanProduct",
+            child: const Icon(Icons.camera_alt),
           ),
         ],
       ),

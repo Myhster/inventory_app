@@ -123,8 +123,9 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                     icon: const Icon(Icons.remove),
                     onPressed: () {
                       int current = int.tryParse(controller.text) ?? 1;
-                      if (current > 1)
+                      if (current > 1) {
                         controller.text = (current - 1).toString();
+                      }
                     },
                   ),
                   Expanded(
@@ -133,8 +134,9 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                       decoration: const InputDecoration(labelText: "Quantity"),
                       keyboardType: TextInputType.number,
                       onChanged: (val) {
-                        if (val.isEmpty || int.parse(val) < 1)
+                        if (val.isEmpty || int.parse(val) < 1) {
                           controller.text = "1";
+                        }
                         newQuantity = int.parse(controller.text);
                       },
                     ),

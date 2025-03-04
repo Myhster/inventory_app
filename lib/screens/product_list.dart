@@ -24,8 +24,9 @@ class ProductList extends StatelessWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty)
+    if (groupedProducts.isEmpty) {
       return const Center(child: Text("No categories yet."));
+    }
 
     // Sortiere Kategorien nach orderIndex
     final sortedCategories =
