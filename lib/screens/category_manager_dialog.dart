@@ -33,28 +33,13 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       title: const Text("Manage Categories"),
       content: SizedBox(
         width: 300,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: _localCategories.length,
-          itemBuilder: (context, index) {
-            final category = _localCategories[index];
-            return ListTile(
-              title: Text(category.name),
-              trailing:
-                  category.name != 'Unsortiert'
-                      ? IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () async {
-                          await widget.manager.removeCategory(category.id!);
-                          setState(() {
-                            _localCategories.removeAt(index);
-                          });
-                          widget.onRefresh();
-                        },
-                      )
-                      : null,
-            );
-          },
+        height: 400, // Feste Höhe für Scrollbarkeit
+        child: ReorderableListView(
+          onReorder: _onReorder,
+          children:
+              _localCategories
+                  .map((category) => _buildCategoryTile(category))
+                  .toList(),
         ),
       ),
       actions: [
@@ -67,6 +52,26 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
           child: const Text("Add Category"),
         ),
       ],
+    );
+  }
+
+  Widget _buildCategoryTile(Category category) {
+    return ListTile(
+      key: ValueKey(category.id), // Wichtig für ReorderableListView
+      title: Text(category.name),
+      trailing:
+          category.name != 'Unsortiert'
+              ? IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () async {
+                  await widget.manager.removeCategory(category.id!);
+                  setState(() {
+                    _localCategories.remove(category);
+                  });
+                  widget.onRefresh();
+                },
+              )
+              : null,
     );
   }
 
@@ -104,5 +109,18 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       widget.onRefresh();
       Navigator.pop(context);
     }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex -= 1; // Anpassung für Flutter-Verhalten
+    final movedCategory = _localCategories.removeAt(oldIndex);
+    _localCategories.insert(newIndex, movedCategory);
+
+    // Aktualisiere orderIndex in der Datenbank
+    for (int i = 0; i < _localCategories.length; i++) {
+      await widget.manager.updateCategoryOrder(_localCategories[i].id!, i);
+    }
+    setState(() {});
+    widget.onRefresh(); // Aktualisiert InventoryScreen
   }
 }

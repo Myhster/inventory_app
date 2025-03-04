@@ -40,4 +40,8 @@ class InventoryManager {
   Future<void> removeCategory(int id) async {
     await _dbService.removeCategory(id);
   }
+
+  Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
+    await _dbService.updateCategoryOrder(id, newOrderIndex);
+  }
 }

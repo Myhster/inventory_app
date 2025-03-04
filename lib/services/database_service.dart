@@ -10,13 +10,28 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 2, // Version erhöht
+      version: 3, // Version erhöht für orderIndex
       onCreate: (db, version) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await _createTables(db); // Tabellen neu erstellen bei Upgrade
+          await _createTables(db);
+        }
+        if (oldVersion < 3) {
+          await db.execute(
+            'ALTER TABLE categories ADD COLUMN orderIndex INTEGER DEFAULT 0',
+          );
+          // Setze initiale Reihenfolge für bestehende Kategorien
+          final categories = await db.query('categories');
+          for (int i = 0; i < categories.length; i++) {
+            await db.update(
+              'categories',
+              {'orderIndex': i},
+              where: 'id = ?',
+              whereArgs: [categories[i]['id']],
+            );
+          }
         }
       },
     );
@@ -34,10 +49,10 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        orderIndex INTEGER DEFAULT 0
       )
     ''');
-    // Vordefinierte Kategorien
     for (var cat in [
       'Unsortiert',
       'Gemüse',
@@ -47,6 +62,7 @@ class DatabaseService {
     ]) {
       await db.insert('categories', {
         'name': cat,
+        'orderIndex': 0,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
@@ -89,16 +105,25 @@ class DatabaseService {
 
   Future<int> insertCategory(Category category) async {
     await initDatabase();
-    return await _database!.insert(
+    final existing = await _database!.query(
       'categories',
-      category.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.ignore,
+      orderBy: 'orderIndex DESC',
+      limit: 1,
     );
+    int orderIndex =
+        existing.isNotEmpty ? (existing.first['orderIndex'] as int) + 1 : 0;
+    return await _database!.insert('categories', {
+      ...category.toMap(),
+      'orderIndex': orderIndex,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   Future<List<Category>> getCategories() async {
     await initDatabase();
-    final maps = await _database!.query('categories');
+    final maps = await _database!.query(
+      'categories',
+      orderBy: 'orderIndex ASC',
+    );
     return maps.map((map) => Category.fromMap(map)).toList();
   }
 
@@ -121,5 +146,15 @@ class DatabaseService {
         await txn.delete('categories', where: 'id = ?', whereArgs: [id]);
       }
     });
+  }
+
+  Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
+    await initDatabase();
+    await _database!.update(
+      'categories',
+      {'orderIndex': newOrderIndex},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

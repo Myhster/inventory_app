@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/models/product.dart';
+import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 
 class ProductList extends StatelessWidget {
   final List<Product> products;
+  final List<Category> categories; // Neu: Kategorien mit orderIndex
   final bool isLoading;
   final InventoryManager manager;
   final VoidCallback onRefresh;
@@ -11,6 +13,7 @@ class ProductList extends StatelessWidget {
   const ProductList({
     super.key,
     required this.products,
+    required this.categories,
     required this.isLoading,
     required this.manager,
     required this.onRefresh,
@@ -21,13 +24,23 @@ class ProductList extends StatelessWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty) {
+    if (groupedProducts.isEmpty)
       return const Center(child: Text("No categories yet."));
-    }
+
+    // Sortiere Kategorien nach orderIndex
+    final sortedCategories =
+        groupedProducts.keys.toList()..sort((a, b) {
+          final aIndex =
+              categories.firstWhere((cat) => cat.name == a).orderIndex;
+          final bIndex =
+              categories.firstWhere((cat) => cat.name == b).orderIndex;
+          return aIndex.compareTo(bIndex);
+        });
+
     return ListView.builder(
-      itemCount: groupedProducts.length,
+      itemCount: sortedCategories.length,
       itemBuilder: (context, index) {
-        final category = groupedProducts.keys.elementAt(index);
+        final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
         return ExpansionTile(
           title: Text(

@@ -66,6 +66,7 @@ class InventoryScreenState extends State<InventoryScreen> {
           Expanded(
             child: ProductList(
               products: _products,
+              categories: _categories, // Neu
               isLoading: _isLoading,
               manager: _manager,
               onRefresh: _refreshData,
