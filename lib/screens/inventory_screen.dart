@@ -28,26 +28,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     _refreshData();
   }
 
-  Future<void> _refreshData() async {
-    print('Refreshing data...');
-    setState(() => _isLoading = true);
-    try {
-      _products = await _manager.getProducts();
-      _categories = await _manager.getCategories();
-      if (_categories.isEmpty) {
-        await _manager.addCategory(Category(name: 'Unsortiert')); // Fallback
-        _categories = await _manager.getCategories();
-      }
-      print(
-        'Loaded ${_products.length} products, ${_categories.length} categories',
-      );
-      if (mounted) setState(() => _isLoading = false);
-    } catch (e) {
-      print('Error refreshing data: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,25 +41,12 @@ class InventoryScreenState extends State<InventoryScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ProductList(
-              products: _products,
-              categories: _categories, // Neu
-              isLoading: _isLoading,
-              manager: _manager,
-              onRefresh: _refreshData,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              "Last Scanned: $_barcode",
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
+      body: ProductList(
+        products: _products,
+        categories: _categories,
+        isLoading: _isLoading,
+        manager: _manager,
+        onRefresh: _refreshData,
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -123,6 +90,26 @@ class InventoryScreenState extends State<InventoryScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _refreshData() async {
+    print('Refreshing data...');
+    setState(() => _isLoading = true);
+    try {
+      _products = await _manager.getProducts();
+      _categories = await _manager.getCategories();
+      if (_categories.isEmpty) {
+        await _manager.addCategory(Category(name: 'Unsortiert')); // Fallback
+        _categories = await _manager.getCategories();
+      }
+      print(
+        'Loaded ${_products.length} products, ${_categories.length} categories',
+      );
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      print('Error refreshing data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _scanAndAddProduct() async {
