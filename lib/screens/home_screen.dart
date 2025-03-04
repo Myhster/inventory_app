@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/screens/inventory_screen.dart';
 import 'package:inventory_app/screens/shopping_list_screen.dart';
+import 'package:inventory_app/services/database_service.dart';
+import 'package:inventory_app/models/category.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,24 +12,145 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  final _screens = [const InventoryScreen(), const ShoppingListScreen()];
+  final DatabaseService _dbService = DatabaseService();
+  List<Category> _categories = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshCategories();
+  }
+
+  Future<void> _refreshCategories() async {
+    try {
+      setState(() => _isLoading = true);
+      final categories = await _dbService.getCategories();
+      print('Categories loaded: ${categories.length}'); // Debugging
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading categories: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: "Inventory"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: "Shopping",
+      appBar: AppBar(title: const Text("Inventory Home")),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _categories.isEmpty
+              ? const Center(child: Text("No categories yet."))
+              : ListView.builder(
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  return ListTile(
+                    title: Text(category.name),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteCategory(category),
+                    ),
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InventoryScreen(),
+                          ),
+                        ),
+                  );
+                },
+              ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _addCategory,
+            tooltip: "Add Category",
+            child: const Icon(Icons.add),
+            heroTag: "addCategory",
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InventoryScreen(),
+                  ),
+                ),
+            tooltip: "Scan Product",
+            child: const Icon(Icons.camera_alt),
+            heroTag: "scanProduct",
           ),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory),
+            label: 'Inventory',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Shopping',
+          ),
+        ],
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ShoppingListScreen(),
+              ),
+            );
+          }
+        },
+      ),
     );
+  }
+
+  Future<void> _addCategory() async {
+    String name = "";
+    await showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Add Category"),
+            content: TextField(
+              decoration: const InputDecoration(labelText: "Category Name"),
+              onChanged: (value) => name = value,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (name.isNotEmpty) {
+                    await _dbService.insertCategory(Category(name: name));
+                    await _refreshCategories();
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text("Add"),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteCategory(Category category) async {
+    await _dbService.removeCategory(category.id!);
+    await _refreshCategories();
   }
 }

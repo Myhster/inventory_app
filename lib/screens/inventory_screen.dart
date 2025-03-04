@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:inventory_app/models/product.dart';
+import 'package:inventory_app/models/category.dart';
 import 'barcode_scanner_dialog.dart';
+import 'add_product_dialog.dart';
+import 'shopping_list_screen.dart';
+import 'product_list.dart';
+import 'category_manager_dialog.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -12,85 +17,58 @@ class InventoryScreen extends StatefulWidget {
 
 class InventoryScreenState extends State<InventoryScreen> {
   final InventoryManager _manager = InventoryManager();
-  late Future<List<Product>> _productsFuture;
+  List<Product> _products = [];
+  List<Category> _categories = [];
   String _barcode = "Not scanned yet";
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _productsFuture = _manager.getProducts();
+    _refreshData();
   }
 
-  @override
+  Future<void> _refreshData() async {
+    print('Refreshing data...');
+    setState(() => _isLoading = true);
+    try {
+      _products = await _manager.getProducts();
+      _categories = await _manager.getCategories();
+      if (_categories.isEmpty) {
+        await _manager.addCategory(Category(name: 'Unsortiert')); // Fallback
+        _categories = await _manager.getCategories();
+      }
+      print(
+        'Loaded ${_products.length} products, ${_categories.length} categories',
+      );
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      print('Error refreshing data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Inventory"),
         actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshData),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed:
-                () => setState(() => _productsFuture = _manager.getProducts()),
+            icon: const Icon(Icons.category),
+            onPressed: () => _manageCategories(context),
           ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: FutureBuilder<List<Product>>(
-              future: _productsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                } else if (snapshot.hasData) {
-                  final products = snapshot.data!;
-                  if (products.isEmpty) {
-                    return const Center(child: Text("No items yet."));
-                  }
-                  return ListView.builder(
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      final product = products[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 8,
-                        ),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.inventory_2,
-                            color: Colors.teal,
-                          ),
-                          title: Text(
-                            product.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            "Qty: ${product.quantity} - ${product.category}",
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () async {
-                              await _manager.removeProduct(product.id!);
-                              if (mounted) {
-                                setState(() {
-                                  _productsFuture =
-                                      _manager
-                                          .getProducts(); // Sofort neuer Future
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-                return const SizedBox.shrink(); // Fallback
-              },
+            child: ProductList(
+              products: _products,
+              isLoading: _isLoading,
+              manager: _manager,
+              onRefresh: _refreshData,
             ),
           ),
           Padding(
@@ -108,17 +86,40 @@ class InventoryScreenState extends State<InventoryScreen> {
           FloatingActionButton(
             onPressed: _addManualProduct,
             tooltip: "Add Manually",
-            heroTag: "addManual",
             child: const Icon(Icons.add),
+            heroTag: "addManual",
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
             onPressed: _scanAndAddProduct,
             tooltip: "Scan Barcode",
-            heroTag: "scanBarcode",
             child: const Icon(Icons.camera_alt),
+            heroTag: "scanBarcode",
           ),
         ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory),
+            label: 'Inventory',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Shopping',
+          ),
+        ],
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ShoppingListScreen(),
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -130,173 +131,61 @@ class InventoryScreenState extends State<InventoryScreen> {
     );
 
     if (scannedBarcode != null && mounted) {
-      String name = "Item $scannedBarcode";
-      String category = "Misc"; // Default
-      await showDialog(
+      final categoriesList =
+          _categories.isNotEmpty
+              ? _categories.map((c) => c.name).toList()
+              : ['Unsortiert'];
+      final productData = await showDialog<ProductData>(
         context: context,
-        builder: (context) {
-          TextEditingController qtyController = TextEditingController(
-            text: "1",
-          );
-          return AlertDialog(
-            title: const Text("Confirm Product"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Barcode: $scannedBarcode"),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () {
-                        int current = int.tryParse(qtyController.text) ?? 1;
-                        if (current > 1) {
-                          qtyController.text = (current - 1).toString();
-                        }
-                      },
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: qtyController,
-                        decoration: const InputDecoration(
-                          labelText: "Quantity",
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          if (value.isEmpty || int.parse(value) < 1) {
-                            qtyController.text = "1";
-                          }
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed:
-                          () =>
-                              qtyController.text =
-                                  (int.parse(qtyController.text) + 1)
-                                      .toString(),
-                    ),
-                  ],
-                ),
-                TextField(
-                  decoration: const InputDecoration(labelText: "Category"),
-                  onChanged:
-                      (value) => category = value.isEmpty ? "Misc" : value,
-                ),
-              ],
+        builder:
+            (context) => AddProductDialog(
+              initialName: "Item $scannedBarcode",
+              categories: categoriesList,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final product = Product(
-                    name: name,
-                    quantity: int.parse(qtyController.text),
-                    category: category,
-                  );
-                  await _manager.addProduct(product);
-                  if (mounted) {
-                    setState(() {
-                      _productsFuture = _manager.getProducts();
-                      _barcode = scannedBarcode;
-                    });
-                  }
-                  Navigator.pop(context);
-                },
-                child: const Text("Confirm"),
-              ),
-            ],
-          );
-        },
       );
+      if (productData != null) {
+        await _manager.addProduct(
+          Product(
+            name: productData.name,
+            quantity: productData.quantity,
+            category: productData.category,
+          ),
+        );
+        _barcode = scannedBarcode;
+        await _refreshData();
+      }
     }
   }
 
   Future<void> _addManualProduct() async {
-    String name = "";
-    String category = "Misc";
+    final productData = await showDialog<ProductData>(
+      context: context,
+      builder:
+          (context) => AddProductDialog(
+            categories: _categories.map((c) => c.name).toList(),
+          ),
+    );
+    if (productData != null && mounted) {
+      await _manager.addProduct(
+        Product(
+          name: productData.name,
+          quantity: productData.quantity,
+          category: productData.category,
+        ),
+      );
+      await _refreshData();
+    }
+  }
+
+  Future<void> _manageCategories(BuildContext context) async {
     await showDialog(
       context: context,
-      builder: (context) {
-        TextEditingController qtyController = TextEditingController(text: "1");
-        return AlertDialog(
-          title: const Text("Add Product Manually"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(labelText: "Name"),
-                onChanged: (value) => name = value,
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: () {
-                      int current = int.tryParse(qtyController.text) ?? 1;
-                      if (current > 1) {
-                        qtyController.text = (current - 1).toString();
-                      }
-                    },
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: qtyController,
-                      decoration: const InputDecoration(labelText: "Quantity"),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        if (value.isEmpty || int.parse(value) < 1) {
-                          qtyController.text = "1";
-                        }
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed:
-                        () =>
-                            qtyController.text =
-                                (int.parse(qtyController.text) + 1).toString(),
-                  ),
-                ],
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: "Category"),
-                onChanged: (value) => category = value.isEmpty ? "Misc" : value,
-              ),
-            ],
+      builder:
+          (context) => CategoryManagerDialog(
+            manager: _manager,
+            categories: _categories,
+            onRefresh: _refreshData,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                final product = Product(
-                  name: name,
-                  quantity: int.parse(qtyController.text),
-                  category: category,
-                );
-                await _manager.addProduct(
-                  product,
-                ); // Async außerhalb von setState
-                if (mounted) {
-                  setState(() {
-                    _productsFuture = _manager.getProducts(); // Synchron
-                  });
-                }
-                Navigator.pop(context);
-              },
-              child: const Text("Add"),
-            ),
-          ],
-        );
-      },
-    );
+    ).then((_) => _refreshData()); // Refresh nach Dialog-Schließen
   }
 }
