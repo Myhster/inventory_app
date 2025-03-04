@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/services/shopping_list.dart';
 import 'package:inventory_app/models/product.dart';
+import 'package:inventory_app/screens/inventory_screen.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -45,6 +46,28 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
           return const Center(child: CircularProgressIndicator());
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory),
+            label: 'Inventory',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Shopping',
+          ),
+        ],
+        currentIndex: 1, // Shopping is aktiv
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const InventoryScreen()),
+              (route) => false, // Removes Shopping from Stack
+            );
+          }
         },
       ),
     );
