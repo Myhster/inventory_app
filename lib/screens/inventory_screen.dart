@@ -47,8 +47,9 @@ class InventoryScreenState extends State<InventoryScreen> {
                   return Center(child: Text("Error: ${snapshot.error}"));
                 } else if (snapshot.hasData) {
                   final products = snapshot.data!;
-                  if (products.isEmpty)
+                  if (products.isEmpty) {
                     return const Center(child: Text("No items yet."));
+                  }
                   return ListView.builder(
                     itemCount: products.length,
                     itemBuilder: (context, index) {
@@ -107,15 +108,15 @@ class InventoryScreenState extends State<InventoryScreen> {
           FloatingActionButton(
             onPressed: _addManualProduct,
             tooltip: "Add Manually",
-            child: const Icon(Icons.add),
             heroTag: "addManual",
+            child: const Icon(Icons.add),
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
             onPressed: _scanAndAddProduct,
             tooltip: "Scan Barcode",
-            child: const Icon(Icons.camera_alt),
             heroTag: "scanBarcode",
+            child: const Icon(Icons.camera_alt),
           ),
         ],
       ),
@@ -130,7 +131,6 @@ class InventoryScreenState extends State<InventoryScreen> {
 
     if (scannedBarcode != null && mounted) {
       String name = "Item $scannedBarcode";
-      int quantity = 1;
       String category = "Misc"; // Default
       await showDialog(
         context: context,
@@ -150,8 +150,9 @@ class InventoryScreenState extends State<InventoryScreen> {
                       icon: const Icon(Icons.remove),
                       onPressed: () {
                         int current = int.tryParse(qtyController.text) ?? 1;
-                        if (current > 1)
+                        if (current > 1) {
                           qtyController.text = (current - 1).toString();
+                        }
                       },
                     ),
                     Expanded(
@@ -162,8 +163,9 @@ class InventoryScreenState extends State<InventoryScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {
-                          if (value.isEmpty || int.parse(value) < 1)
+                          if (value.isEmpty || int.parse(value) < 1) {
                             qtyController.text = "1";
+                          }
                         },
                       ),
                     ),
@@ -216,7 +218,6 @@ class InventoryScreenState extends State<InventoryScreen> {
 
   Future<void> _addManualProduct() async {
     String name = "";
-    int quantity = 1;
     String category = "Misc";
     await showDialog(
       context: context,
@@ -237,8 +238,9 @@ class InventoryScreenState extends State<InventoryScreen> {
                     icon: const Icon(Icons.remove),
                     onPressed: () {
                       int current = int.tryParse(qtyController.text) ?? 1;
-                      if (current > 1)
+                      if (current > 1) {
                         qtyController.text = (current - 1).toString();
+                      }
                     },
                   ),
                   Expanded(
@@ -247,8 +249,9 @@ class InventoryScreenState extends State<InventoryScreen> {
                       decoration: const InputDecoration(labelText: "Quantity"),
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
-                        if (value.isEmpty || int.parse(value) < 1)
+                        if (value.isEmpty || int.parse(value) < 1) {
                           qtyController.text = "1";
+                        }
                       },
                     ),
                   ),

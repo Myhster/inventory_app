@@ -1,16 +1,27 @@
-# inventory_app
+# Inventory App
 
-A new Flutter project.
+A Flutter app for managing household inventory with barcode scanner.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Scan barcodes and add products (quantity, category customizable).
+- Manual input with category and quantity (same products are added).
+- Delete products directly from the list.
+- Navigation between inventory and shopping list.
+- Modern UI with material design (teal theme).
 
-A few resources to get you started if this is your first Flutter project:
+## Installation
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+1. `flutter pub get`.
+2. `flutter run -d <device-id>`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech
+
+- Flutter 3.x
+- SQLite (sqflite)
+- mobile_scanner (barcode)
+- Git for version control
+
+## Screenshots
+
+(add later)

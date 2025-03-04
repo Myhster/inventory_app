@@ -18,7 +18,7 @@ class InventoryManager {
 
   Future<void> removeProduct(int id) async {
     await _dbService.initDatabase();
-    await _dbService.database!.delete(
+    await _dbService.database.delete(
       'products',
       where: 'id = ?',
       whereArgs: [id],
@@ -27,7 +27,7 @@ class InventoryManager {
 
   Future<List<Product>> getProducts() async {
     await _dbService.initDatabase();
-    final maps = await _dbService.database!.query('products');
+    final maps = await _dbService.database.query('products');
     return maps.map((map) => Product.fromMap(map)).toList();
   }
 }
