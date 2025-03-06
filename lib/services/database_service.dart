@@ -10,19 +10,16 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 3, // Version erhöht für orderIndex
+      version: 4, // Version erhöht
       onCreate: (db, version) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await _createTables(db);
-        }
+        if (oldVersion < 2) await _createTables(db);
         if (oldVersion < 3) {
           await db.execute(
             'ALTER TABLE categories ADD COLUMN orderIndex INTEGER DEFAULT 0',
           );
-          // Setze initiale Reihenfolge für bestehende Kategorien
           final categories = await db.query('categories');
           for (int i = 0; i < categories.length; i++) {
             await db.update(
@@ -30,6 +27,20 @@ class DatabaseService {
               {'orderIndex': i},
               where: 'id = ?',
               whereArgs: [categories[i]['id']],
+            );
+          }
+        }
+        if (oldVersion < 4) {
+          await db.execute(
+            'ALTER TABLE products ADD COLUMN orderIndex INTEGER DEFAULT 0',
+          );
+          final products = await db.query('products');
+          for (int i = 0; i < products.length; i++) {
+            await db.update(
+              'products',
+              {'orderIndex': i},
+              where: 'id = ?',
+              whereArgs: [products[i]['id']],
             );
           }
         }
@@ -69,7 +80,28 @@ class DatabaseService {
 
   Future<int> insertProduct(Product product) async {
     await initDatabase();
-    return await _database!.insert('products', product.toMap());
+    final existing = await _database!.query(
+      'products',
+      where: 'category = ?',
+      whereArgs: [product.category],
+      orderBy: 'orderIndex DESC',
+      limit: 1,
+    );
+    int orderIndex =
+        existing.isNotEmpty ? (existing.first['orderIndex'] as int) + 1 : 0;
+    return await _database!.insert('products', {
+      ...product.toMap(),
+      'orderIndex': orderIndex,
+    });
+  }
+
+    Future<List<Product>> getProducts() async {
+    await initDatabase();
+    final maps = await _database!.query(
+      'products',
+      orderBy: 'category ASC, orderIndex ASC',
+    );
+    return maps.map((map) => Product.fromMap(map)).toList();
   }
 
   Future<Product?> getProductByName(String name) async {
@@ -92,10 +124,14 @@ class DatabaseService {
     );
   }
 
-  Future<List<Product>> getProducts() async {
+  Future<void> updateProductOrder(int id, int newOrderIndex) async {
     await initDatabase();
-    final maps = await _database!.query('products');
-    return maps.map((map) => Product.fromMap(map)).toList();
+    await _database!.update(
+      'products',
+      {'orderIndex': newOrderIndex},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<void> removeProduct(int id) async {
@@ -127,6 +163,16 @@ class DatabaseService {
     return maps.map((map) => Category.fromMap(map)).toList();
   }
 
+    Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
+    await initDatabase();
+    await _database!.update(
+      'categories',
+      {'orderIndex': newOrderIndex},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> removeCategory(int id) async {
     await initDatabase();
     await _database!.transaction((txn) async {
@@ -146,15 +192,5 @@ class DatabaseService {
         await txn.delete('categories', where: 'id = ?', whereArgs: [id]);
       }
     });
-  }
-
-  Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
-    await initDatabase();
-    await _database!.update(
-      'categories',
-      {'orderIndex': newOrderIndex},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
   }
 }

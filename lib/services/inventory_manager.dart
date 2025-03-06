@@ -29,6 +29,10 @@ class InventoryManager {
     await _dbService.updateProductQuantity(id, newQuantity);
   }
 
+    Future<void> updateProductOrder(int id, int newOrderIndex) async {
+    await _dbService.updateProductOrder(id, newOrderIndex);
+  }
+
   Future<List<Category>> getCategories() async {
     return await _dbService.getCategories();
   }

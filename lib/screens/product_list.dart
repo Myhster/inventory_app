@@ -5,7 +5,7 @@ import 'package:inventory_app/services/inventory_manager.dart';
 
 class ProductList extends StatelessWidget {
   final List<Product> products;
-  final List<Category> categories; // Neu: Kategorien mit orderIndex
+  final List<Category> categories;
   final bool isLoading;
   final InventoryManager manager;
   final VoidCallback onRefresh;
@@ -24,11 +24,9 @@ class ProductList extends StatelessWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty) {
+    if (groupedProducts.isEmpty)
       return const Center(child: Text("No categories yet."));
-    }
 
-    // Sortiere Kategorien nach orderIndex
     final sortedCategories =
         groupedProducts.keys.toList()..sort((a, b) {
           final aIndex =
@@ -49,42 +47,58 @@ class ProductList extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           initiallyExpanded: true,
-          children:
-              categoryProducts
-                  .map((product) => _buildProductTile(product, context))
-                  .toList(),
+          children: [
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onReorder:
+                  (oldIndex, newIndex) =>
+                      _onReorder(categoryProducts, oldIndex, newIndex),
+              children:
+                  categoryProducts
+                      .map((product) => _buildProductTile(product, context))
+                      .toList(),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildProductTile(Product product, BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: ListTile(
-        leading: const Icon(Icons.inventory_2, color: Colors.teal),
-        title: Text(
-          product.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text("Qty: ${product.quantity}"),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove),
-              onPressed: () => _updateQuantity(product, -1),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _updateQuantity(product, 1),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _deleteProduct(product, context),
-            ),
-          ],
-        ),
+   Widget _buildProductTile(Product product, BuildContext context) {
+    return ListTile(
+      key: ValueKey(product.id),
+      leading: IconButton(
+        icon: const Icon(Icons.drag_handle),
+        onPressed: () {}, // Nur visuell, ReorderableListView übernimmt Drag
+      ),
+      title: Text(
+        product.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text("Qty: ${product.quantity}"), // Dropdown entfernt
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _updateQuantity(product, -1),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _updateQuantity(product, 1),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _deleteProduct(product, context),
+          ),
+        ],
       ),
     );
   }
@@ -128,5 +142,19 @@ class ProductList extends StatelessWidget {
       await manager.removeProduct(product.id!);
       onRefresh();
     }
+  }
+
+  void _onReorder(
+    List<Product> categoryProducts,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final movedProduct = categoryProducts.removeAt(oldIndex);
+    categoryProducts.insert(newIndex, movedProduct);
+    for (int i = 0; i < categoryProducts.length; i++) {
+      await manager.updateProductOrder(categoryProducts[i].id!, i);
+    }
+    onRefresh();
   }
 }
