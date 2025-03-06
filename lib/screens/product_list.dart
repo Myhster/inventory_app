@@ -77,7 +77,11 @@ class ProductList extends StatelessWidget {
         product.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: Text("Qty: ${product.quantity}"),
+      subtitle: Text(
+        product.useFillLevel
+            ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
+            : "Qty: ${product.quantity}",
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -85,16 +89,24 @@ class ProductList extends StatelessWidget {
             icon: const Icon(Icons.remove),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () => _updateQuantity(product, -1),
+            onPressed:
+                () =>
+                    product.useFillLevel
+                        ? _updateFillLevel(product, -0.2)
+                        : _updateQuantity(product, -1),
           ),
           IconButton(
             icon: const Icon(Icons.add),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () => _updateQuantity(product, 1),
+            onPressed:
+                () =>
+                    product.useFillLevel
+                        ? _updateFillLevel(product, 0.2)
+                        : _updateQuantity(product, 1),
           ),
           IconButton(
-            icon: const Icon(Icons.settings), // Zahnrad-Icon
+            icon: const Icon(Icons.settings),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => _openSettings(product, context),
@@ -135,6 +147,15 @@ class ProductList extends StatelessWidget {
     final newQuantity = product.quantity + change;
     if (newQuantity > 0) {
       await manager.updateProductQuantity(product.id!, newQuantity);
+      onRefresh();
+    }
+  }
+
+  Future<void> _updateFillLevel(Product product, double change) async {
+    double newFillLevel = (product.fillLevel ?? 1.0) + change;
+    if (newFillLevel >= 0.2 && newFillLevel <= 1.0) {
+      // Begrenzung auf 0.2 bis 1.0
+      await manager.updateProductFillLevel(product.id!, newFillLevel);
       onRefresh();
     }
   }

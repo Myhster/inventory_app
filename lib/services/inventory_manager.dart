@@ -33,6 +33,15 @@ class InventoryManager {
     await _dbService.updateProductOrder(id, newOrderIndex);
   }
 
+  Future<void> updateProductFillLevel(int id, double fillLevel) async {
+    await _dbService.update(
+      'products',
+      {'fillLevel': fillLevel},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> updateProductSettings(
     int id,
     String category,
