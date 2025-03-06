@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
+import 'package:inventory_app/screens/product_settings_dialog.dart';
 
 class ProductList extends StatelessWidget {
   final List<Product> products;
@@ -65,7 +66,7 @@ class ProductList extends StatelessWidget {
     );
   }
 
-   Widget _buildProductTile(Product product, BuildContext context) {
+  Widget _buildProductTile(Product product, BuildContext context) {
     return ListTile(
       key: ValueKey(product.id),
       leading: IconButton(
@@ -76,7 +77,7 @@ class ProductList extends StatelessWidget {
         product.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: Text("Qty: ${product.quantity}"), // Dropdown entfernt
+      subtitle: Text("Qty: ${product.quantity}"),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -93,6 +94,12 @@ class ProductList extends StatelessWidget {
             onPressed: () => _updateQuantity(product, 1),
           ),
           IconButton(
+            icon: const Icon(Icons.settings), // Zahnrad-Icon
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _openSettings(product, context),
+          ),
+          IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -100,6 +107,19 @@ class ProductList extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openSettings(Product product, BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder:
+          (context) => ProductSettingsDialog(
+            product: product,
+            categories: categories,
+            manager: manager,
+            onRefresh: onRefresh,
+          ),
     );
   }
 

@@ -10,7 +10,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 4, // Version erhöht
+      version: 5, // Version erhöht
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -43,6 +43,15 @@ class DatabaseService {
               whereArgs: [products[i]['id']],
             );
           }
+        }
+        if (oldVersion < 5) {
+          await db.execute(
+            'ALTER TABLE products ADD COLUMN threshold INTEGER DEFAULT 1',
+          );
+          await db.execute(
+            'ALTER TABLE products ADD COLUMN useFillLevel INTEGER DEFAULT 0',
+          );
+          await db.execute('ALTER TABLE products ADD COLUMN fillLevel REAL');
         }
       },
     );
@@ -95,7 +104,7 @@ class DatabaseService {
     });
   }
 
-    Future<List<Product>> getProducts() async {
+  Future<List<Product>> getProducts() async {
     await initDatabase();
     final maps = await _database!.query(
       'products',
@@ -112,6 +121,16 @@ class DatabaseService {
       whereArgs: [name],
     );
     return maps.isNotEmpty ? Product.fromMap(maps.first) : null;
+  }
+
+  Future<void> update(
+    String table,
+    Map<String, dynamic> values, {
+    String? where,
+    List<dynamic>? whereArgs,
+  }) async {
+    await initDatabase();
+    await _database!.update(table, values, where: where, whereArgs: whereArgs);
   }
 
   Future<void> updateProductQuantity(int id, int newQuantity) async {
@@ -163,7 +182,7 @@ class DatabaseService {
     return maps.map((map) => Category.fromMap(map)).toList();
   }
 
-    Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
+  Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
     await initDatabase();
     await _database!.update(
       'categories',

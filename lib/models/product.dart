@@ -4,6 +4,9 @@ class Product {
   final int quantity;
   final String category;
   final int orderIndex;
+  final int? threshold;
+  final bool useFillLevel;
+  final double? fillLevel;
 
   Product({
     this.id,
@@ -11,6 +14,9 @@ class Product {
     required this.quantity,
     required this.category,
     this.orderIndex = 0,
+    this.threshold = 1,
+    this.useFillLevel = false,
+    this.fillLevel,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +26,9 @@ class Product {
       'quantity': quantity,
       'category': category,
       'orderIndex': orderIndex,
+      'threshold': threshold,
+      'useFillLevel': useFillLevel ? 1 : 0,
+      'fillLevel': fillLevel,
     };
   }
 
@@ -30,6 +39,9 @@ class Product {
       quantity: map['quantity'],
       category: map['category'],
       orderIndex: map['orderIndex'] ?? 0,
+      threshold: map['threshold'] ?? 1,
+      useFillLevel: map['useFillLevel'] == 1 ? true : false,
+      fillLevel: map['fillLevel'],
     );
   }
 }
