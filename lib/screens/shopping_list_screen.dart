@@ -102,13 +102,15 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildShoppingTile(Product product, BuildContext context) {
+    final toBuy =
+        product.useFillLevel
+            ? 1
+            : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
+                .clamp(1, double.infinity)
+                .toInt(); // Fix: Berechnung
     return ListTile(
       title: Text(product.name),
-      subtitle: Text(
-        product.useFillLevel
-            ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
-            : "Qty: ${product.quantity}",
-      ),
+      subtitle: Text("To Buy: $toBuy"), // Fix: Neue Anzeige
       trailing: Checkbox(
         value: false,
         onChanged: (value) => _handleCheckbox(product, value, context),
