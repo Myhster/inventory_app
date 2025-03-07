@@ -50,15 +50,16 @@ class AddProductDialogState extends State<AddProductDialog> {
                     ? TextEditingController(text: _name)
                     : null,
           ),
-          if (!_useFillLevel) // Fix: Menge nur bei !useFillLevel
+          if (!_useFillLevel)
             Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove),
                   onPressed: () {
                     int current = int.tryParse(_qtyController.text) ?? 1;
-                    if (current > 1)
-                      _qtyController.text = (current - 1).toString();
+                    if (current > 0)
+                      _qtyController.text =
+                          (current - 1).toString();
                   },
                 ),
                 Expanded(
@@ -67,8 +68,8 @@ class AddProductDialogState extends State<AddProductDialog> {
                     decoration: const InputDecoration(labelText: "Quantity"),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
-                      if (value.isEmpty || int.parse(value) < 1)
-                        _qtyController.text = "1";
+                      if (value.isEmpty || int.parse(value) < 0)
+                        _qtyController.text = "0";
                     },
                   ),
                 ),
@@ -115,11 +116,7 @@ class AddProductDialogState extends State<AddProductDialog> {
                     context,
                     ProductData(
                       _name,
-                      _useFillLevel
-                          ? 1
-                          : int.parse(
-                            _qtyController.text,
-                          ), // Fix: Menge 1 bei useFillLevel
+                      _useFillLevel ? 1 : int.parse(_qtyController.text),
                       _category,
                       _useFillLevel,
                     ),

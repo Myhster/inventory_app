@@ -17,7 +17,7 @@ class Product {
     this.threshold,
     this.useFillLevel = false,
     this.fillLevel,
-  }) : quantity = useFillLevel ? 1 : (quantity ?? 1);
+  }) : quantity = useFillLevel ? 1 : (quantity ?? 0);
 
   Map<String, dynamic> toMap() {
     return {

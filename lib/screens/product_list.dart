@@ -32,8 +32,9 @@ class ProductList extends StatelessWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty)
+    if (groupedProducts.isEmpty) {
       return const Center(child: Text("No categories yet."));
+    }
 
     final sortedCategories =
         groupedProducts.keys.toList()..sort((a, b) {
@@ -153,7 +154,7 @@ class ProductList extends StatelessWidget {
 
   Future<void> _updateQuantity(Product product, int change) async {
     final newQuantity = product.quantity + change;
-    if (newQuantity > 0) {
+    if (newQuantity >= 0) {
       await manager.updateProductQuantity(product.id!, newQuantity);
       onRefresh();
     }
