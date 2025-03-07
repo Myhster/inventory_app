@@ -13,7 +13,6 @@ class ShoppingListScreen extends StatefulWidget {
 class ShoppingListScreenState extends State<ShoppingListScreen> {
   final ShoppingList _shoppingList = ShoppingList();
   List<Product> _shoppingProducts = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -22,9 +21,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Future<void> _refreshShoppingList() async {
-    setState(() => _isLoading = true);
-    _shoppingProducts = await _shoppingList.getShoppingList();
-    if (mounted) setState(() => _isLoading = false);
+    setState(() {});
   }
 
   @override
@@ -35,12 +32,12 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshShoppingList, // Manuelles Refresh hinzufügen
+            onPressed: _refreshShoppingList,
           ),
         ],
       ),
       body: FutureBuilder<List<Product>>(
-        future: _shoppingList.getShoppingList(), // Immer aktuelle Liste
+        future: _shoppingList.getShoppingList(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

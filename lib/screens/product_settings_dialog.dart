@@ -88,11 +88,19 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                       decoration: const InputDecoration(
                         labelText: "Quantity Threshold",
                       ),
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: false,
+                      ), // Nur Ganzzahlen erlauben
                       controller: TextEditingController(
-                        text: _threshold?.toString() ?? "",
+                        text: _threshold?.toInt().toString() ?? "",
                       ),
-                      onChanged: (value) => _threshold = double.tryParse(value),
+                      onChanged: (value) {
+                        final parsed = int.tryParse(value);
+                        if (parsed != null)
+                          _threshold =
+                              parsed
+                                  .toDouble(); // Als double speichern, aber Ganzzahl
+                      },
                     ),
                   ),
                   Checkbox(
