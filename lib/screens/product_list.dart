@@ -27,13 +27,13 @@ class ProductList extends StatelessWidget {
   });
 
   @override
+  @override
   Widget build(BuildContext context) {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty) {
+    if (groupedProducts.isEmpty)
       return const Center(child: Text("No categories yet."));
-    }
 
     final sortedCategories =
         groupedProducts.keys.toList()..sort((a, b) {
@@ -50,6 +50,7 @@ class ProductList extends StatelessWidget {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
         return ExpansionTile(
+          key: ValueKey(category), // Key für Kategorie
           title: Text(
             category,
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -75,10 +76,10 @@ class ProductList extends StatelessWidget {
 
   Widget _buildProductTile(Product product, BuildContext context) {
     return ListTile(
-      key: ValueKey(product.id),
+      key: ValueKey(product.id), // Key für jedes Produkt
       leading: IconButton(
         icon: const Icon(Icons.drag_handle),
-        onPressed: () {}, // Nur visuell, ReorderableListView übernimmt Drag
+        onPressed: () {},
       ),
       title: Text(
         product.name,
