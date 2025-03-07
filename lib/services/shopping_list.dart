@@ -2,6 +2,13 @@ import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:flutter/foundation.dart';
 
+import 'dart:math';
+
+double roundToPrecision(double value, int precision) {
+  final factor = pow(10, precision);
+  return (value * factor).roundToDouble() / factor;
+}
+
 class ShoppingList {
   final InventoryManager _manager = InventoryManager();
 
@@ -9,12 +16,8 @@ class ShoppingList {
     final products = await _manager.getProducts();
     return products.where((product) {
       if (product.useFillLevel) {
-        final fillLevel = double.parse(
-          (product.fillLevel ?? 1.0).toStringAsFixed(1),
-        );
-        final threshold = double.parse(
-          (product.threshold ?? 0.2).toStringAsFixed(1),
-        );
+        final fillLevel = roundToPrecision(product.fillLevel ?? 1.0, 1);
+        final threshold = roundToPrecision(product.threshold ?? 0.2, 1);
         debugPrint(
           "Product: ${product.name}, fillLevel: $fillLevel, threshold: $threshold, <=: ${fillLevel <= threshold}",
         );

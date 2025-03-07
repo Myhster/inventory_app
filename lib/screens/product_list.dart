@@ -3,6 +3,12 @@ import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:inventory_app/screens/product_settings_dialog.dart';
+import 'dart:math';
+
+double roundToPrecision(double value, int precision) {
+  final factor = pow(10, precision);
+  return (value * factor).roundToDouble() / factor;
+}
 
 class ProductList extends StatelessWidget {
   final List<Product> products;
@@ -154,7 +160,7 @@ class ProductList extends StatelessWidget {
 
   Future<void> _updateFillLevel(Product product, double change) async {
     double newFillLevel = (product.fillLevel ?? 1.0) + change;
-    newFillLevel = double.parse(newFillLevel.toStringAsFixed(1));
+    newFillLevel = roundToPrecision(newFillLevel, 1);
     if (newFillLevel >= 0.2 && newFillLevel <= 1.0) {
       debugPrint("Updating ${product.name} to newFillLevel: $newFillLevel");
       await manager.updateProductFillLevel(product.id!, newFillLevel);

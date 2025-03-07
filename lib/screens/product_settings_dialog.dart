@@ -111,7 +111,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                     label: _fillLevel?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _fillLevel = value),
                   ),
-                  const Text("Threshold (max 0.8):"),
+                  const Text("Threshold:"),
                   Slider(
                     value: _threshold ?? 0.2,
                     min: 0.2,
