@@ -6,11 +6,11 @@ import 'package:inventory_app/models/category.dart';
 class DatabaseService {
   Database? _database;
 
-  Future<void> initDatabase() async {
+    Future<void> initDatabase() async {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 5, // Version erhöht
+      version: 6, // Version erhöht
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -52,6 +52,23 @@ class DatabaseService {
             'ALTER TABLE products ADD COLUMN useFillLevel INTEGER DEFAULT 0',
           );
           await db.execute('ALTER TABLE products ADD COLUMN fillLevel REAL');
+        }
+        if (oldVersion < 6) {
+          await db.execute('ALTER TABLE products RENAME TO tmp_products');
+          await db.execute('''
+            CREATE TABLE products (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL,
+              quantity INTEGER NOT NULL,
+              category TEXT NOT NULL,
+              orderIndex INTEGER DEFAULT 0,
+              threshold REAL DEFAULT 0.2,
+              useFillLevel INTEGER DEFAULT 0,
+              fillLevel REAL
+            )
+          ''');
+          await db.execute('INSERT INTO products SELECT * FROM tmp_products');
+          await db.execute('DROP TABLE tmp_products');
         }
       },
     );

@@ -4,20 +4,20 @@ class Product {
   final int quantity;
   final String category;
   final int orderIndex;
-  final int? threshold;
+  final double? threshold;
   final bool useFillLevel;
   final double? fillLevel;
 
   Product({
     this.id,
     required this.name,
-    required this.quantity,
+    int? quantity,
     required this.category,
     this.orderIndex = 0,
-    this.threshold = 1,
+    this.threshold = 1.0,
     this.useFillLevel = false,
     this.fillLevel,
-  });
+  }) : quantity = useFillLevel ? 1 : (quantity ?? 1);
 
   Map<String, dynamic> toMap() {
     return {
@@ -39,7 +39,7 @@ class Product {
       quantity: map['quantity'],
       category: map['category'],
       orderIndex: map['orderIndex'] ?? 0,
-      threshold: map['threshold'] ?? 1,
+      threshold: map['threshold'] ?? 1.0,
       useFillLevel: map['useFillLevel'] == 1 ? true : false,
       fillLevel: map['fillLevel'],
     );

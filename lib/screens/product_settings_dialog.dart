@@ -23,7 +23,7 @@ class ProductSettingsDialog extends StatefulWidget {
 
 class ProductSettingsDialogState extends State<ProductSettingsDialog> {
   late String _category;
-  late int? _threshold;
+  late double? _threshold;
   late bool _useFillLevel;
   late double? _fillLevel;
 
@@ -59,34 +59,50 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
               onChanged:
                   (value) => setState(() => _category = value ?? _category),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(labelText: "Threshold"),
-                    keyboardType: TextInputType.number,
-                    controller: TextEditingController(
-                      text: _threshold?.toString() ?? "",
-                    ),
-                    onChanged: (value) => _threshold = int.tryParse(value),
-                  ),
-                ),
-                Checkbox(
-                  value: _threshold == null,
-                  onChanged:
-                      (value) => setState(() => _threshold = value! ? null : 1),
-                ),
-                const Text("No Shopping List"),
-              ],
-            ),
+            if (!_useFillLevel)
+              Text("Current Quantity: ${widget.product.quantity}"),
             SwitchListTile(
               title: const Text("Use Fill Level"),
               value: _useFillLevel,
-              onChanged: (value) => setState(() => _useFillLevel = value),
+              onChanged:
+                  (value) => setState(() {
+                    _useFillLevel = value;
+                    if (!value && _threshold != null && _threshold! < 1.0) {
+                      _threshold = 1.0;
+                    } else if (value &&
+                        (_threshold == null || _threshold! >= 1.0)) {
+                      _threshold = 0.2;
+                    }
+                  }),
             ),
+            if (!_useFillLevel)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        labelText: "Quantity Threshold",
+                      ),
+                      keyboardType: TextInputType.number,
+                      controller: TextEditingController(
+                        text: _threshold?.toString() ?? "",
+                      ),
+                      onChanged: (value) => _threshold = double.tryParse(value),
+                    ),
+                  ),
+                  Checkbox(
+                    value: _threshold == null,
+                    onChanged:
+                        (value) =>
+                            setState(() => _threshold = value! ? null : 1.0),
+                  ),
+                  const Text("No Shopping List"),
+                ],
+              ),
             if (_useFillLevel)
               Column(
                 children: [
+                  const Text("Fill Level:"),
                   Slider(
                     value: _fillLevel ?? 1.0,
                     min: 0.2,
@@ -95,8 +111,31 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                     label: _fillLevel?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _fillLevel = value),
                   ),
-                  Text(
-                    "Fill Level: ${_fillLevel?.toStringAsFixed(1) ?? '1.0'}",
+                  const Text("Threshold (max 0.8):"),
+                  Slider(
+                    value: _threshold ?? 0.2,
+                    min: 0.2,
+                    max: 0.8, // Fix: Maximal 0.8
+                    divisions: 3, // 0.2, 0.4, 0.6, 0.8
+                    label: _threshold?.toStringAsFixed(1),
+                    onChanged: (value) => setState(() => _threshold = value),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Fill: ${_fillLevel?.toStringAsFixed(1) ?? '1.0'}, Threshold: ${_threshold?.toStringAsFixed(1) ?? '0.2'}",
+                        ),
+                      ),
+                      Checkbox(
+                        value: _threshold == null,
+                        onChanged:
+                            (value) => setState(
+                              () => _threshold = value! ? null : 0.2,
+                            ),
+                      ),
+                      const Text("No Shopping List"),
+                    ],
                   ),
                 ],
               ),

@@ -13,7 +13,7 @@ class ShoppingListScreen extends StatefulWidget {
 class ShoppingListScreenState extends State<ShoppingListScreen> {
   final ShoppingList _shoppingList = ShoppingList();
   List<Product> _shoppingProducts = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -30,13 +30,29 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Shopping List")),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _shoppingProducts.isEmpty
-              ? const Center(child: Text("Nothing to buy yet!"))
-              : _buildShoppingList(context),
+      appBar: AppBar(
+        title: const Text("Shopping List"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshShoppingList, // Manuelles Refresh hinzufügen
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<Product>>(
+        future: _shoppingList.getShoppingList(), // Immer aktuelle Liste
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text("Error loading shopping list"));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Nothing to buy yet!"));
+          }
+          _shoppingProducts = snapshot.data!;
+          return _buildShoppingList(context);
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
@@ -88,20 +104,16 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   Widget _buildShoppingTile(Product product, BuildContext context) {
     return ListTile(
       title: Text(product.name),
-      subtitle: Text("Qty: ${product.quantity}"),
+      subtitle: Text(
+        product.useFillLevel
+            ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
+            : "Qty: ${product.quantity}",
+      ),
       trailing: Checkbox(
         value: false,
         onChanged: (value) => _handleCheckbox(product, value, context),
       ),
     );
-  }
-
-  Map<String, List<Product>> _groupByCategory(List<Product> products) {
-    final Map<String, List<Product>> grouped = {};
-    for (var product in products) {
-      grouped.putIfAbsent(product.category, () => []).add(product);
-    }
-    return grouped;
   }
 
   Future<void> _handleCheckbox(
@@ -111,62 +123,76 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   ) async {
     if (value == true) {
       int newQuantity = 1;
-      final controller = TextEditingController(text: "1");
-      final result = await showDialog<int>(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text("Add to Inventory"),
-              content: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: () {
-                      int current = int.tryParse(controller.text) ?? 1;
-                      if (current > 1) {
-                        controller.text = (current - 1).toString();
-                      }
-                    },
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(labelText: "Quantity"),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) {
-                        if (val.isEmpty || int.parse(val) < 1) {
-                          controller.text = "1";
+      if (!product.useFillLevel) {
+        // Nur bei Nicht-Fill-Level Menge anpassen
+        final controller = TextEditingController(text: "1");
+        final result = await showDialog<int>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text("Add to Inventory"),
+                content: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        int current = int.tryParse(controller.text) ?? 1;
+                        if (current > 1) {
+                          controller.text = (current - 1).toString();
                         }
-                        newQuantity = int.parse(controller.text);
                       },
                     ),
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          labelText: "Quantity",
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          if (val.isEmpty || int.parse(val) < 1) {
+                            controller.text = "1";
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        int current = int.tryParse(controller.text) ?? 1;
+                        controller.text = (current + 1).toString();
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancel"),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      int current = int.tryParse(controller.text) ?? 1;
-                      controller.text = (current + 1).toString();
-                      newQuantity = int.parse(controller.text);
-                    },
+                  TextButton(
+                    onPressed:
+                        () =>
+                            Navigator.pop(context, int.parse(controller.text)),
+                    child: const Text("Confirm"),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, newQuantity),
-                  child: const Text("Confirm"),
-                ),
-              ],
-            ),
-      );
-      if (result != null && mounted) {
-        await _shoppingList.moveToInventory(product, result);
+        );
+        newQuantity = result ?? 1;
+      }
+      if (mounted) {
+        await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
       }
     }
+  }
+
+  Map<String, List<Product>> _groupByCategory(List<Product> products) {
+    final Map<String, List<Product>> grouped = {};
+    for (var product in products) {
+      grouped.putIfAbsent(product.category, () => []).add(product);
+    }
+    return grouped;
   }
 }

@@ -8,10 +8,14 @@ class InventoryManager {
   Future<void> addProduct(Product product) async {
     final existing = await _dbService.getProductByName(product.name);
     if (existing != null) {
-      await _dbService.updateProductQuantity(
-        existing.id!,
-        existing.quantity + product.quantity,
-      );
+      if (existing.useFillLevel) {
+        await _dbService.updateProductQuantity(existing.id!, 1);
+      } else {
+        await _dbService.updateProductQuantity(
+          existing.id!,
+          existing.quantity + product.quantity,
+        );
+      }
     } else {
       await _dbService.insertProduct(product);
     }
@@ -45,7 +49,7 @@ class InventoryManager {
   Future<void> updateProductSettings(
     int id,
     String category,
-    int? threshold,
+    double? threshold,
     bool useFillLevel,
     double? fillLevel,
   ) async {

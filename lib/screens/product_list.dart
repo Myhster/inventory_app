@@ -25,8 +25,9 @@ class ProductList extends StatelessWidget {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
     final groupedProducts = _groupByCategory(products);
-    if (groupedProducts.isEmpty)
+    if (groupedProducts.isEmpty) {
       return const Center(child: Text("No categories yet."));
+    }
 
     final sortedCategories =
         groupedProducts.keys.toList()..sort((a, b) {
@@ -154,7 +155,6 @@ class ProductList extends StatelessWidget {
   Future<void> _updateFillLevel(Product product, double change) async {
     double newFillLevel = (product.fillLevel ?? 1.0) + change;
     if (newFillLevel >= 0.2 && newFillLevel <= 1.0) {
-      // Begrenzung auf 0.2 bis 1.0
       await manager.updateProductFillLevel(product.id!, newFillLevel);
       onRefresh();
     }

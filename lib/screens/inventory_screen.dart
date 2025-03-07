@@ -93,17 +93,9 @@ class InventoryScreenState extends State<InventoryScreen> {
 
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
-    try {
-      _products = await _manager.getProducts();
-      _categories = await _manager.getCategories();
-      if (_categories.isEmpty) {
-        await _manager.addCategory(Category(name: 'Unsortiert')); // Fallback
-        _categories = await _manager.getCategories();
-      }
-      if (mounted) setState(() => _isLoading = false);
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    _products = await _manager.getProducts();
+    _categories = await _manager.getCategories();
+    setState(() => _isLoading = false);
   }
 
   Future<void> _scanAndAddProduct() async {
