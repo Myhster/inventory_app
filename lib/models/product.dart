@@ -14,7 +14,7 @@ class Product {
     int? quantity,
     required this.category,
     this.orderIndex = 0,
-    this.threshold = 1.0,
+    this.threshold,
     this.useFillLevel = false,
     this.fillLevel,
   }) : quantity = useFillLevel ? 1 : (quantity ?? 1);
@@ -39,7 +39,7 @@ class Product {
       quantity: map['quantity'],
       category: map['category'],
       orderIndex: map['orderIndex'] ?? 0,
-      threshold: map['threshold'] ?? 1.0,
+      threshold: map['threshold'],
       useFillLevel: map['useFillLevel'] == 1 ? true : false,
       fillLevel: map['fillLevel'],
     );

@@ -34,6 +34,10 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
     _threshold = widget.product.threshold;
     _useFillLevel = widget.product.useFillLevel;
     _fillLevel = widget.product.fillLevel ?? 1.0;
+    // Fix: Begrenze threshold auf 0.8 nur bei useFillLevel
+    if (_useFillLevel && (_threshold == null || _threshold! > 0.8)) {
+      _threshold = 0.8;
+    }
   }
 
   @override
@@ -70,7 +74,8 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                     if (!value && _threshold != null && _threshold! < 1.0) {
                       _threshold = 1.0;
                     } else if (value &&
-                        (_threshold == null || _threshold! >= 1.0)) {
+                        (_threshold == null || _threshold! > 0.8)) {
+                      // Fix: Max 0.8 bei Aktivierung
                       _threshold = 0.2;
                     }
                   }),
@@ -115,8 +120,8 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                   Slider(
                     value: _threshold ?? 0.2,
                     min: 0.2,
-                    max: 0.8, // Fix: Maximal 0.8
-                    divisions: 3, // 0.2, 0.4, 0.6, 0.8
+                    max: _useFillLevel ? 0.8 : 1.0, // Fix: Dynamischer max-Wert
+                    divisions: _useFillLevel ? 3 : 4,
                     label: _threshold?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _threshold = value),
                   ),
@@ -131,7 +136,11 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                         value: _threshold == null,
                         onChanged:
                             (value) => setState(
-                              () => _threshold = value! ? null : 0.2,
+                              () =>
+                                  _threshold =
+                                      value!
+                                          ? null
+                                          : (_useFillLevel ? 0.2 : 1.0),
                             ),
                       ),
                       const Text("No Shopping List"),

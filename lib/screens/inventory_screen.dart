@@ -123,6 +123,9 @@ class InventoryScreenState extends State<InventoryScreen> {
             name: productData.name,
             quantity: productData.quantity,
             category: productData.category,
+            useFillLevel: productData.useFillLevel,
+            fillLevel: productData.useFillLevel ? 1.0 : null,
+            threshold: productData.useFillLevel ? 0.2 : 1.0,
           ),
         );
         await _refreshData();
@@ -144,6 +147,9 @@ class InventoryScreenState extends State<InventoryScreen> {
           name: productData.name,
           quantity: productData.quantity,
           category: productData.category,
+          useFillLevel: productData.useFillLevel,
+          fillLevel: productData.useFillLevel ? 1.0 : null,
+          threshold: productData.useFillLevel ? 0.2 : 1.0,
         ),
       );
       await _refreshData();
@@ -159,6 +165,6 @@ class InventoryScreenState extends State<InventoryScreen> {
             categories: _categories,
             onRefresh: _refreshData,
           ),
-    ).then((_) => _refreshData()); // Refresh nach Dialog-Schließen
+    ).then((_) => _refreshData());
   }
 }
