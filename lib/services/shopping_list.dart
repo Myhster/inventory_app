@@ -1,5 +1,6 @@
 import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
+import 'package:flutter/foundation.dart';
 
 class ShoppingList {
   final InventoryManager _manager = InventoryManager();
@@ -8,10 +9,16 @@ class ShoppingList {
     final products = await _manager.getProducts();
     return products.where((product) {
       if (product.useFillLevel) {
-        // Workaround: Subtrahiere 0.1, um sicherzustellen, dass fillLevel <= threshold
-        // auch bei Gleitkommawerten korrekt triggert (z. B. 0.6 <= 0.6).
-        // TODO: Ursache (Floating-Point oder Refresh) später untersuchen.
-        return (product.fillLevel ?? 1.0) - 0.1 <= (product.threshold ?? 0.2);
+        final fillLevel = double.parse(
+          (product.fillLevel ?? 1.0).toStringAsFixed(1),
+        );
+        final threshold = double.parse(
+          (product.threshold ?? 0.2).toStringAsFixed(1),
+        );
+        debugPrint(
+          "Product: ${product.name}, fillLevel: $fillLevel, threshold: $threshold, <=: ${fillLevel <= threshold}",
+        );
+        return fillLevel <= threshold;
       } else {
         return product.quantity <= (product.threshold?.toInt() ?? 1);
       }
