@@ -117,7 +117,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  Widget _buildShoppingTile(Product product, BuildContext context) {
+Widget _buildShoppingTile(Product product, BuildContext context) {
     return FutureBuilder<List<Product>>(
       future: _shoppingList.getThresholdProducts(),
       builder: (context, snapshot) {
@@ -137,9 +137,19 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
         return ListTile(
           title: Text(product.name),
           subtitle: Text("To Buy: $toBuy"),
-          trailing: Checkbox(
-            value: false,
-            onChanged: (value) => _handleCheckbox(product, value, context),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isManual) // Nur für manuelle Produkte
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteShoppingProduct(product),
+                ),
+              Checkbox(
+                value: false,
+                onChanged: (value) => _handleCheckbox(product, value, context),
+              ),
+            ],
           ),
         );
       },
@@ -220,6 +230,16 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
       }
+    }
+  }
+
+Future<void> _deleteShoppingProduct(Product product) async {
+    final inventoryProducts = await _shoppingList.getInventoryProducts();
+    final isManual =
+        product.id != null && !inventoryProducts.any((p) => p.id == product.id);
+    if (isManual && product.id != null) {
+      await _shoppingList.removeFromShoppingList(product.id!);
+      await _refreshShoppingList();
     }
   }
 

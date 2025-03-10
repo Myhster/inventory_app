@@ -106,6 +106,10 @@ class ShoppingList {
     await _manager.addShoppingItem(name, quantityToBuy, category);
   }
 
+  Future<void> removeFromShoppingList(int id) async {
+    await _manager.removeShoppingItem(id);
+  }
+
   Future<List<Product>> getThresholdProducts() async {
     final inventoryProducts = await _manager.getProducts();
     return inventoryProducts.where((p) => p.isBelowThreshold()).toList();
