@@ -28,7 +28,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     });
   }
 
-  Future<void> _addShoppingProduct() async {
+Future<void> _addShoppingProduct() async {
     final categories = await _shoppingList.getCategories();
     final productData = await showDialog<ProductData>(
       context: context,
@@ -38,9 +38,11 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
     );
     if (productData != null && mounted) {
+      final validatedQuantity =
+          productData.quantity < 1 ? 1 : productData.quantity;
       await _shoppingList.addToShoppingList(
         productData.name,
-        productData.quantity,
+        validatedQuantity,
         productData.category,
       );
       await _refreshShoppingList();
@@ -156,16 +158,14 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
     );
   }
 
-  Future<void> _handleCheckbox(
+ Future<void> _handleCheckbox(
     Product product,
     bool? value,
     BuildContext context,
   ) async {
     if (value == true) {
       int newQuantity = 1;
-      final inventoryProducts =
-          await _shoppingList
-              .getInventoryProducts();
+      final inventoryProducts = await _shoppingList.getInventoryProducts();
       final isManual =
           product.id != null &&
           !inventoryProducts.any((p) => p.id == product.id);
@@ -185,7 +185,8 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
                       onPressed: () {
                         int current = int.tryParse(controller.text) ?? 1;
                         if (current > 1)
-                          controller.text = (current - 1).toString();
+                          controller.text =
+                              (current - 1).toString(); // Nicht unter 1
                       },
                     ),
                     Expanded(
@@ -197,7 +198,7 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
                           if (val.isEmpty || int.parse(val) < 1)
-                            controller.text = "1";
+                            controller.text = "1"; // Mindestens 1
                         },
                       ),
                     ),
@@ -224,7 +225,7 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
                 ],
               ),
         );
-        newQuantity = result ?? 1;
+        newQuantity = result ?? 1; // Standardwert ist 1
       }
       if (mounted) {
         await _shoppingList.moveToInventory(product, newQuantity);

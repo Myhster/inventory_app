@@ -56,7 +56,7 @@ class ShoppingList {
       orElse:
           () => Product(
             name: product.name,
-            quantity: newQuantity,
+            quantity: newQuantity < 1 ? 1 : newQuantity, // Mindestens 1
             category: product.category,
             useFillLevel: false,
             fillLevel: null,
@@ -69,7 +69,8 @@ class ShoppingList {
         await _manager.updateProductFillLevel(inventoryProduct.id!, 1.0);
         await _manager.updateProductQuantity(inventoryProduct.id!, 1);
       } else {
-        final updatedQuantity = inventoryProduct.quantity + newQuantity;
+        final updatedQuantity =
+            inventoryProduct.quantity + (newQuantity < 1 ? 1 : newQuantity);
         await _manager.updateProductQuantity(
           inventoryProduct.id!,
           updatedQuantity,
@@ -79,7 +80,7 @@ class ShoppingList {
       await _manager.addProduct(
         Product(
           name: product.name,
-          quantity: newQuantity,
+          quantity: newQuantity < 1 ? 1 : newQuantity, // Mindestens 1
           category: product.category,
           useFillLevel: false,
           fillLevel: null,
