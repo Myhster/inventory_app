@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inventory_app/services/shopping_list.dart';
 import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/screens/inventory_screen.dart';
+import 'add_product_dialog.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -21,7 +22,29 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Future<void> _refreshShoppingList() async {
-    setState(() {});
+    final products = await _shoppingList.getShoppingList();
+    setState(() {
+      _shoppingProducts = products;
+    });
+  }
+
+  Future<void> _addShoppingProduct() async {
+    final categories = await _shoppingList.getCategories();
+    final productData = await showDialog<ProductData>(
+      context: context,
+      builder:
+          (context) => AddProductDialog(
+            categories: categories.map((c) => c.name).toList(),
+          ),
+    );
+    if (productData != null && mounted) {
+      await _shoppingList.addToShoppingList(
+        productData.name,
+        productData.quantity,
+        productData.category,
+      );
+      await _refreshShoppingList();
+    }
   }
 
   @override
@@ -36,19 +59,15 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<Product>>(
-        future: _shoppingList.getShoppingList(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text("Error loading shopping list"));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Nothing to buy yet!"));
-          }
-          _shoppingProducts = snapshot.data!;
-          return _buildShoppingList(context);
-        },
+      body:
+          _shoppingProducts.isEmpty
+              ? const Center(child: Text("Nothing to buy yet!"))
+              : _buildShoppingList(context),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addShoppingProduct,
+        tooltip: "Add Product",
+        heroTag: "addShoppingProduct",
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -99,19 +118,31 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildShoppingTile(Product product, BuildContext context) {
-    final toBuy =
-        product.useFillLevel
-            ? 1
-            : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
-                .clamp(1, double.infinity)
-                .toInt(); // Fix: Berechnung
-    return ListTile(
-      title: Text(product.name),
-      subtitle: Text("To Buy: $toBuy"), // Fix: Neue Anzeige
-      trailing: Checkbox(
-        value: false,
-        onChanged: (value) => _handleCheckbox(product, value, context),
-      ),
+    return FutureBuilder<List<Product>>(
+      future: _shoppingList.getThresholdProducts(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const ListTile(title: Text("Loading..."));
+        final thresholdProducts = snapshot.data!;
+        final isManual =
+            product.id != null &&
+            !thresholdProducts.any((p) => p.id == product.id);
+        final toBuy =
+            isManual
+                ? product.quantity
+                : product.useFillLevel
+                ? 1
+                : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
+                    .clamp(1, double.infinity)
+                    .toInt();
+        return ListTile(
+          title: Text(product.name),
+          subtitle: Text("To Buy: $toBuy"),
+          trailing: Checkbox(
+            value: false,
+            onChanged: (value) => _handleCheckbox(product, value, context),
+          ),
+        );
+      },
     );
   }
 
@@ -122,9 +153,16 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   ) async {
     if (value == true) {
       int newQuantity = 1;
-      if (!product.useFillLevel) {
-        // Nur bei Nicht-Fill-Level Menge anpassen
-        final controller = TextEditingController(text: "1");
+      final inventoryProducts =
+          await _shoppingList
+              .getInventoryProducts();
+      final isManual =
+          product.id != null &&
+          !inventoryProducts.any((p) => p.id == product.id);
+      if (!product.useFillLevel || isManual) {
+        final controller = TextEditingController(
+          text: product.quantity.toString(),
+        );
         final result = await showDialog<int>(
           context: context,
           builder:
@@ -136,9 +174,8 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                       icon: const Icon(Icons.remove),
                       onPressed: () {
                         int current = int.tryParse(controller.text) ?? 1;
-                        if (current > 1) {
+                        if (current > 1)
                           controller.text = (current - 1).toString();
-                        }
                       },
                     ),
                     Expanded(
@@ -149,9 +186,8 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
-                          if (val.isEmpty || int.parse(val) < 1) {
+                          if (val.isEmpty || int.parse(val) < 1)
                             controller.text = "1";
-                          }
                         },
                       ),
                     ),

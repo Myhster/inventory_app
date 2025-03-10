@@ -21,6 +21,22 @@ class InventoryManager {
     }
   }
 
+  Future<void> addShoppingItem(
+    String name,
+    int quantityToBuy,
+    String category,
+  ) async {
+    await _dbService.insertShoppingItem(name, quantityToBuy, category);
+  }
+
+  Future<List<Map<String, dynamic>>> getShoppingItems() async {
+    return await _dbService.getShoppingItems();
+  }
+
+  Future<void> removeShoppingItem(int id) async {
+    await _dbService.removeShoppingItem(id);
+  }
+
   Future<List<Product>> getProducts() async {
     return await _dbService.getProducts();
   }

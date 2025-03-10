@@ -6,13 +6,14 @@ import 'package:inventory_app/models/category.dart';
 class DatabaseService {
   Database? _database;
 
-    Future<void> initDatabase() async {
+  Future<void> initDatabase() async {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 6, // Version erhöht
+      version: 7,
       onCreate: (db, version) async {
         await _createTables(db);
+        await _addShoppingListTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await _createTables(db);
@@ -70,21 +71,39 @@ class DatabaseService {
           await db.execute('INSERT INTO products SELECT * FROM tmp_products');
           await db.execute('DROP TABLE tmp_products');
         }
+        if (oldVersion < 7) {
+          await _addShoppingListTable(db);
+        }
       },
     );
+  }
+  
+  Future<void> _addShoppingListTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE shopping_list (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        quantity_to_buy INTEGER NOT NULL,
+        category TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _createTables(Database db) async {
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS products (
+      CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         quantity INTEGER NOT NULL,
-        category TEXT NOT NULL
+        category TEXT NOT NULL,
+        orderIndex INTEGER DEFAULT 0,
+        threshold REAL DEFAULT 0.2,
+        useFillLevel INTEGER DEFAULT 0,
+        fillLevel REAL
       )
     ''');
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS categories (
+      CREATE TABLE categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         orderIndex INTEGER DEFAULT 0
@@ -228,5 +247,28 @@ class DatabaseService {
         await txn.delete('categories', where: 'id = ?', whereArgs: [id]);
       }
     });
+  }
+
+  Future<int> insertShoppingItem(
+    String name,
+    int quantityToBuy,
+    String category,
+  ) async {
+    await initDatabase();
+    return await _database!.insert('shopping_list', {
+      'name': name,
+      'quantity_to_buy': quantityToBuy,
+      'category': category,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getShoppingItems() async {
+    await initDatabase();
+    return await _database!.query('shopping_list');
+  }
+
+  Future<void> removeShoppingItem(int id) async {
+    await initDatabase();
+    await _database!.delete('shopping_list', where: 'id = ?', whereArgs: [id]);
   }
 }

@@ -44,4 +44,34 @@ class Product {
       fillLevel: map['fillLevel'],
     );
   }
+
+  Product copyWith({
+    int? id,
+    String? name,
+    int? quantity,
+    String? category,
+    int? orderIndex,
+    double? threshold,
+    bool? useFillLevel,
+    double? fillLevel,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      category: category ?? this.category,
+      orderIndex: orderIndex ?? this.orderIndex,
+      threshold: threshold ?? this.threshold,
+      useFillLevel: useFillLevel ?? this.useFillLevel,
+      fillLevel: fillLevel ?? this.fillLevel,
+    );
+  }
+
+  
+  bool isBelowThreshold() {
+    if (useFillLevel) {
+      return (fillLevel ?? 1.0) <= (threshold ?? 0.2);
+    }
+    return quantity <= (threshold?.toInt() ?? 1);
+  }
 }
