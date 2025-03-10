@@ -76,8 +76,14 @@ class ProductList extends StatelessWidget {
   }
 
   Widget _buildProductTile(Product product, BuildContext context) {
+    final isBelowThreshold =
+        (product.useFillLevel &&
+            (product.fillLevel ?? 1.0) <= (product.threshold ?? 0.2)) ||
+        (!product.useFillLevel &&
+            product.quantity <= (product.threshold ?? 1.0));
+
     return ListTile(
-      key: ValueKey(product.id), // Key für jedes Produkt
+      key: ValueKey(product.id),
       leading: IconButton(
         icon: const Icon(Icons.drag_handle),
         onPressed: () {},
@@ -86,10 +92,22 @@ class ProductList extends StatelessWidget {
         product.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: Text(
-        product.useFillLevel
-            ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
-            : "Qty: ${product.quantity}",
+      subtitle: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+        decoration:
+            isBelowThreshold
+                ? BoxDecoration(
+                  color: Colors.red.withOpacity(
+                    0.2,
+                  ), // Leicht roter Hintergrund
+                  borderRadius: BorderRadius.circular(4),
+                )
+                : null,
+        child: Text(
+          product.useFillLevel
+              ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
+              : "Qty: ${product.quantity}",
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
