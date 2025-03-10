@@ -14,7 +14,7 @@ class Product {
     int? quantity,
     required this.category,
     this.orderIndex = 0,
-    this.threshold,
+    this.threshold = 0.0,
     this.useFillLevel = false,
     this.fillLevel,
   }) : quantity = useFillLevel ? 1 : (quantity ?? 0);
@@ -67,7 +67,6 @@ class Product {
     );
   }
 
-  
   bool isBelowThreshold() {
     if (useFillLevel) {
       return (fillLevel ?? 1.0) <= (threshold ?? 0.2);

@@ -25,7 +25,8 @@ class ShoppingList {
             );
             return fillLevel <= threshold;
           } else {
-            return product.quantity <= (product.threshold?.toInt() ?? 1);
+            return product.quantity <=
+                (product.threshold?.toInt() ?? 0);
           }
         }).toList();
 
@@ -56,11 +57,11 @@ class ShoppingList {
       orElse:
           () => Product(
             name: product.name,
-            quantity: newQuantity < 1 ? 1 : newQuantity, // Mindestens 1
+            quantity: newQuantity < 1 ? 1 : newQuantity,
             category: product.category,
             useFillLevel: false,
             fillLevel: null,
-            threshold: 1.0,
+            threshold: 0.0,
           ),
     );
 
@@ -80,11 +81,11 @@ class ShoppingList {
       await _manager.addProduct(
         Product(
           name: product.name,
-          quantity: newQuantity < 1 ? 1 : newQuantity, // Mindestens 1
+          quantity: newQuantity < 1 ? 1 : newQuantity,
           category: product.category,
           useFillLevel: false,
           fillLevel: null,
-          threshold: 1.0,
+          threshold: 0.0,
         ),
       );
     }
