@@ -118,9 +118,10 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                   const Text("Fill Level:"),
                   Slider(
                     value: _fillLevel ?? 1.0,
-                    min: 0.2,
+                    min: 0.0, // Geändert von 0.2 auf 0.0
                     max: 1.0,
-                    divisions: 4,
+                    divisions:
+                        10, // Geändert von 4 auf 10 für feinere Schritte (0.0, 0.1, ..., 1.0)
                     label: _fillLevel?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _fillLevel = value),
                   ),
@@ -128,7 +129,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                   Slider(
                     value: _threshold ?? 0.2,
                     min: 0.2,
-                    max: _useFillLevel ? 0.8 : 1.0, // Fix: Dynamischer max-Wert
+                    max: _useFillLevel ? 0.8 : 1.0,
                     divisions: _useFillLevel ? 3 : 4,
                     label: _threshold?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _threshold = value),

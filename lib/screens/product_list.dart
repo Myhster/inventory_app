@@ -27,7 +27,6 @@ class ProductList extends StatelessWidget {
   });
 
   @override
-  @override
   Widget build(BuildContext context) {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (products.isEmpty) return const Center(child: Text("No items yet."));
@@ -51,7 +50,7 @@ class ProductList extends StatelessWidget {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
         return ExpansionTile(
-          key: ValueKey(category), // Key für Kategorie
+          key: ValueKey(category),
           title: Text(
             category,
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -80,7 +79,7 @@ class ProductList extends StatelessWidget {
         (product.useFillLevel &&
             (product.fillLevel ?? 1.0) <= (product.threshold ?? 0.2)) ||
         (!product.useFillLevel &&
-            product.quantity <= (product.threshold ?? 1.0));
+            product.quantity <= (product.threshold ?? 0.0));
 
     return ListTile(
       key: ValueKey(product.id),
@@ -92,21 +91,22 @@ class ProductList extends StatelessWidget {
         product.name,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-        decoration:
-            isBelowThreshold
-                ? BoxDecoration(
-                  color: Colors.red.withOpacity(
-                    0.2,
-                  ), // Leicht roter Hintergrund
-                  borderRadius: BorderRadius.circular(4),
-                )
-                : null,
-        child: Text(
-          product.useFillLevel
-              ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
-              : "Qty: ${product.quantity}",
+      subtitle: GestureDetector(
+        onTap: () => _editProductValue(product, context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+          decoration:
+              isBelowThreshold
+                  ? BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  )
+                  : null,
+          child: Text(
+            product.useFillLevel
+                ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
+                : "Qty: ${product.quantity}",
+          ),
         ),
       ),
       trailing: Row(
@@ -147,6 +147,97 @@ class ProductList extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _editProductValue(Product product, BuildContext context) async {
+    final controller = TextEditingController(
+      text:
+          product.useFillLevel
+              ? product.fillLevel?.toStringAsFixed(1) ?? '1.0'
+              : product.quantity.toString(),
+    );
+    final result = await showDialog<dynamic>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              "Edit ${product.useFillLevel ? 'Fill Level' : 'Quantity'}",
+            ),
+            content: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: () {
+                    if (product.useFillLevel) {
+                      double current = double.tryParse(controller.text) ?? 1.0;
+                      if (current > 0.0)
+                        controller.text = (current - 0.2).toStringAsFixed(1);
+                    } else {
+                      int current = int.tryParse(controller.text) ?? 1;
+                      if (current > 0)
+                        controller.text = (current - 1).toString();
+                    }
+                  },
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(labelText: "Value"),
+                    keyboardType:
+                        product.useFillLevel
+                            ? TextInputType.numberWithOptions(decimal: true)
+                            : TextInputType.number,
+                    onChanged: (val) {
+                      if (product.useFillLevel) {
+                        double newValue = double.tryParse(val) ?? 1.0;
+                        if (newValue < 0.0 || newValue > 1.0)
+                          controller.text = "1.0";
+                      } else {
+                        if (val.isEmpty || int.parse(val) < 0)
+                          controller.text = "0";
+                      }
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    if (product.useFillLevel) {
+                      double current = double.tryParse(controller.text) ?? 1.0;
+                      if (current < 1.0)
+                        controller.text = (current + 0.2).toStringAsFixed(1);
+                    } else {
+                      int current = int.tryParse(controller.text) ?? 1;
+                      controller.text = (current + 1).toString();
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text("Confirm"),
+              ),
+            ],
+          ),
+    );
+    if (result != null && context.mounted) {
+      if (product.useFillLevel) {
+        double newFillLevel = double.tryParse(result) ?? 1.0;
+        newFillLevel = roundToPrecision(newFillLevel.clamp(0.0, 1.0), 1);
+        await manager.updateProductFillLevel(product.id!, newFillLevel);
+      } else {
+        int newQuantity = int.tryParse(result) ?? 1;
+        if (newQuantity < 0) newQuantity = 0;
+        await manager.updateProductQuantity(product.id!, newQuantity);
+      }
+      onRefresh();
+    }
   }
 
   Future<void> _openSettings(Product product, BuildContext context) async {
