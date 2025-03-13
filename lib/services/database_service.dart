@@ -110,11 +110,11 @@ class DatabaseService {
       )
     ''');
     for (var cat in [
-      'Unsortiert',
-      'Gemüse',
-      'Obst',
-      'Brot',
-      'Reinigungsmittel',
+      'Unsorted',
+      'Fruits',
+      'Vegetables',
+      'Bread',
+      'Detergents',
     ]) {
       await db.insert('categories', {
         'name': cat,
