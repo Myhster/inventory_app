@@ -237,10 +237,10 @@ class DatabaseService {
             where: 'id = ?',
             whereArgs: [id],
           )).first;
-      if (category['name'] != 'Unsortiert') {
+      if (category['name'] != 'Unsorted') {
         await txn.update(
           'products',
-          {'category': 'Unsortiert'},
+          {'category': 'Unsorted'},
           where: 'category = ?',
           whereArgs: [category['name']],
         );

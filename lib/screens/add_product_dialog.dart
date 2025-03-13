@@ -26,13 +26,13 @@ class AddProductDialogState extends State<AddProductDialog> {
     _qtyController = TextEditingController(text: "1");
     _name = widget.initialName ?? "";
     _category =
-        widget.categories.isNotEmpty ? widget.categories.first : "Unsortiert";
+        widget.categories.isNotEmpty ? widget.categories.first : "Unsorted";
   }
 
   @override
   Widget build(BuildContext context) {
     final categoryOptions =
-        widget.categories.isNotEmpty ? widget.categories : ['Unsortiert'];
+        widget.categories.isNotEmpty ? widget.categories : ['Unsorted'];
     return AlertDialog(
       title: Text(
         widget.initialName != null ? "Confirm Product" : "Add Product Manually",

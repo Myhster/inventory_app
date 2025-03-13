@@ -108,7 +108,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       final categoriesList =
           _categories.isNotEmpty
               ? _categories.map((c) => c.name).toList()
-              : ['Unsortiert'];
+              : ['Unsorted'];
       final productData = await showDialog<ProductData>(
         context: context,
         builder:
