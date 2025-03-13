@@ -1,42 +1,70 @@
 import 'package:flutter/material.dart';
 
-final Map<String, Map<String, Color>> categoryColors = {
-  'Unsorted': {
-    'light': const Color(0xFFB0BEC5),
-    'dark': const Color(0xFF90A4AE),
-  },
-  'Fruits': {'light': const Color(0xFFFFCC80), 'dark': const Color(0xFFFFB300)},
-  'Vegetables': {
-    'light': const Color.fromARGB(255, 183, 208, 184),
-    'dark': const Color.fromRGBO(139, 164, 140, 1),
-  },
-  'Bread': {'light': const Color(0xFFBCAAA4), 'dark': const Color(0xFFA1887F)},
-  'Detergents': {
-    'light': const Color(0xFF90CAF9),
-    'dark': const Color(0xFF64B5F6),
-  },
-};
-
-// Palette für neue Kategorien
+// Farben als eigenständige Optionen (aus deinem JSON)
 final Map<String, Map<String, Color>> availableColors = {
-  'Peach': {'light': const Color(0xFFFFE0B2), 'dark': const Color(0xFFFFB300)},
-  'Mint': {'light': const Color(0xFFB2DFDB), 'dark': const Color(0xFF4DB6AC)},
-  'Lavender': {
-    'light': const Color(0xFFD1C4E9),
-    'dark': const Color(0xFF9575CD),
+  'Green': {
+    'light': const Color.fromRGBO(149, 196, 144, 1),
+    'dark': const Color.fromRGBO(118, 179, 112, 1),
   },
-  'Rose': {'light': const Color(0xFFF8BBD0), 'dark': const Color(0xFFF06292)},
-  'Sand': {'light': const Color(0xFFE6D7B9), 'dark': const Color(0xFFD4A373)},
+  'Brown': {
+    'light': const Color.fromRGBO(211, 195, 190, 1),
+    'dark': const Color.fromRGBO(191, 168, 161, 1),
+  },
+  'Blue': {
+    'light': const Color.fromRGBO(182, 220, 252, 1),
+    'dark': const Color.fromRGBO(133, 197, 250, 1),
+  },
+  'Orange': {
+    'light': const Color.fromRGBO(254, 212, 174, 1),
+    'dark': const Color.fromRGBO(253, 185, 124, 1),
+  },
+  'Mint': {
+    'light': const Color.fromRGBO(200, 230, 227, 1),
+    'dark': const Color.fromRGBO(164, 214, 209, 1),
+  },
+  'Purple': {
+    'light': const Color.fromRGBO(231, 224, 243, 1),
+    'dark': const Color.fromRGBO(204, 189, 229, 1),
+  },
+  'Red': {
+    'light': const Color.fromRGBO(251, 221, 232, 1),
+    'dark': const Color.fromRGBO(245, 173, 199, 1),
+  },
+  'Beige': {
+    'light': const Color.fromRGBO(238, 235, 228, 1),
+    'dark': const Color.fromRGBO(218, 211, 196, 1),
+  },
+  'Yellow': {
+    'light': const Color.fromRGBO(255, 220, 167, 1),
+    'dark': const Color.fromRGBO(255, 200, 117, 1),
+  },
+  'Gray': {
+    'light': const Color.fromRGBO(176, 190, 197, 1),
+    'dark': const Color.fromRGBO(146, 165, 175, 1),
+  },
 };
 
+// Default-Zuweisungen für Kategorien (änderbar)
+final Map<String, String> categoryColorAssignments = {
+  'Unsorted': 'Gray',
+  'Fruits': 'Orange',
+  'Vegetables': 'Green',
+  'Bread': 'Brown',
+  'Detergents': 'Blue',
+};
+
+// Funktionen zur Farbabfrage
 Color getCategoryLightColor(String category) {
-  return categoryColors[category]?['light'] ??
-      availableColors.values.first['light']!;
+  final colorName =
+      categoryColorAssignments[category] ?? 'Gray'; // Fallback: Gray
+  return availableColors[colorName]!['light']!;
 }
 
 Color getCategoryDarkColor(String category) {
-  return categoryColors[category]?['dark'] ??
-      availableColors.values.first['dark']!;
+  final colorName =
+      categoryColorAssignments[category] ?? 'Gray'; // Fallback: Gray
+  return availableColors[colorName]!['dark']!;
 }
 
+// Liste für Dropdown
 final List<String> colorOptions = availableColors.keys.toList();

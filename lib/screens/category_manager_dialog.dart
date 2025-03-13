@@ -62,25 +62,33 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       key: ValueKey(category.id),
       title: Text(category.name),
       tileColor: lightColor,
-      trailing:
-          category.name != 'Unsorted'
-              ? IconButton(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.color_lens),
+            onPressed: () => _changeCategoryColor(category),
+          ),
+          if (category.name != 'Unsorted')
+            IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () async {
                   await widget.manager.removeCategory(category.id!);
                   setState(() {
                     _localCategories.remove(category);
+                  categoryColorAssignments.remove(category.name); // Farbzuweisung entfernen
                   });
                   widget.onRefresh();
                 },
-              )
-              : null,
+            ),
+        ],
+      ),
     );
   }
 
   Future<void> _addCategory(BuildContext context) async {
     String name = "";
-    String selectedColor = colorOptions.first; 
+    String selectedColor = colorOptions.first;
     final added = await showDialog<bool>(
       context: context,
       builder:
@@ -129,9 +137,7 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
                 onPressed: () async {
                   if (name.isNotEmpty) {
                     await widget.manager.addCategory(Category(name: name));
-                    if (!categoryColors.containsKey(name)) {
-                      categoryColors[name] = availableColors[selectedColor]!;
-                    }
+                categoryColorAssignments[name] = selectedColor; // Farbe zuweisen
                     Navigator.pop(context, true);
                   }
                 },
@@ -145,6 +151,53 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       setState(() => _localCategories = updatedCategories);
       widget.onRefresh();
       Navigator.pop(context);
+    }
+  }
+
+  Future<void> _changeCategoryColor(Category category) async {
+    String selectedColor = categoryColorAssignments[category.name] ?? 'Gray';
+    final changed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Change Color for ${category.name}"),
+        content: DropdownButtonFormField<String>(
+          value: selectedColor,
+          decoration: const InputDecoration(labelText: "Color"),
+          items: colorOptions
+              .map((color) => DropdownMenuItem(
+                    value: color,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 20,
+                          color: availableColors[color]!['light'],
+                        ),
+                        const SizedBox(width: 10),
+                        Text(color),
+                      ],
+                    ),
+                  ))
+              .toList(),
+          onChanged: (value) => selectedColor = value ?? selectedColor,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+    if (changed == true && mounted) {
+      setState(() {
+        categoryColorAssignments[category.name] = selectedColor;
+      });
+      widget.onRefresh();
     }
   }
 
