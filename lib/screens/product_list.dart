@@ -3,6 +3,7 @@ import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:inventory_app/screens/product_settings_dialog.dart';
+import 'package:inventory_app/utils/colors.dart';
 import 'dart:math';
 
 double roundToPrecision(double value, int precision) {
@@ -49,37 +50,47 @@ class ProductList extends StatelessWidget {
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
-        return ExpansionTile(
-          key: ValueKey(category),
-          title: Text(
-            category,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          initiallyExpanded: true,
-          children: [
-            ReorderableListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              onReorder:
-                  (oldIndex, newIndex) =>
-                      _onReorder(categoryProducts, oldIndex, newIndex),
-              children:
-                  categoryProducts
-                      .map((product) => _buildProductTile(product, context))
-                      .toList(),
+        final lightColor = getCategoryLightColor(category);
+        final darkColor = getCategoryDarkColor(category);
+        return Container(
+          color: lightColor,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ExpansionTile(
+            key: ValueKey(category),
+            title: Text(
+              category,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ],
+            backgroundColor: lightColor,
+            collapsedBackgroundColor: lightColor,
+            initiallyExpanded: true,
+            children: [
+              Container(
+                color: darkColor,
+                child: ReorderableListView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onReorder:
+                      (oldIndex, newIndex) =>
+                          _onReorder(categoryProducts, oldIndex, newIndex),
+                  children:
+                      categoryProducts
+                          .map((product) => _buildProductTile(product, context))
+                          .toList(),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   Widget _buildProductTile(Product product, BuildContext context) {
-    final isBelowThreshold =
-        (product.useFillLevel &&
-            (product.fillLevel ?? 1.0) <= (product.threshold ?? 0.2)) ||
-        (!product.useFillLevel &&
-            product.quantity <= (product.threshold ?? 0.0));
+    final isBelowThreshold = product.isBelowThreshold();
 
     return ListTile(
       key: ValueKey(product.id),

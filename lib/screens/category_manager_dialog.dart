@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
+import 'package:inventory_app/utils/colors.dart';
 
 class CategoryManagerDialog extends StatefulWidget {
   final InventoryManager manager;
@@ -33,7 +34,7 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       title: const Text("Manage Categories"),
       content: SizedBox(
         width: 300,
-        height: 400, // Feste Höhe für Scrollbarkeit
+        height: 400,
         child: ReorderableListView(
           onReorder: _onReorder,
           children:
@@ -56,11 +57,13 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
   }
 
   Widget _buildCategoryTile(Category category) {
+    final lightColor = getCategoryLightColor(category.name);
     return ListTile(
-      key: ValueKey(category.id), // Wichtig für ReorderableListView
+      key: ValueKey(category.id),
       title: Text(category.name),
+      tileColor: lightColor,
       trailing:
-          category.name != 'Unsortiert'
+          category.name != 'Unsorted'
               ? IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () async {
@@ -77,14 +80,45 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
 
   Future<void> _addCategory(BuildContext context) async {
     String name = "";
+    String selectedColor = colorOptions.first; 
     final added = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text("Add Category"),
-            content: TextField(
-              decoration: const InputDecoration(labelText: "Category Name"),
-              onChanged: (value) => name = value,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: const InputDecoration(labelText: "Category Name"),
+                  onChanged: (value) => name = value,
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedColor,
+                  decoration: const InputDecoration(labelText: "Color"),
+                  items:
+                      colorOptions
+                          .map(
+                            (color) => DropdownMenuItem(
+                              value: color,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    color: availableColors[color]!['light'],
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(color),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                  onChanged:
+                      (value) => selectedColor = value ?? colorOptions.first,
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -95,6 +129,9 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
                 onPressed: () async {
                   if (name.isNotEmpty) {
                     await widget.manager.addCategory(Category(name: name));
+                    if (!categoryColors.containsKey(name)) {
+                      categoryColors[name] = availableColors[selectedColor]!;
+                    }
                     Navigator.pop(context, true);
                   }
                 },
@@ -112,15 +149,13 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
   }
 
   void _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex -= 1; // Anpassung für Flutter-Verhalten
+    if (newIndex > oldIndex) newIndex -= 1;
     final movedCategory = _localCategories.removeAt(oldIndex);
     _localCategories.insert(newIndex, movedCategory);
-
-    // Aktualisiere orderIndex in der Datenbank
     for (int i = 0; i < _localCategories.length; i++) {
       await widget.manager.updateCategoryOrder(_localCategories[i].id!, i);
     }
     setState(() {});
-    widget.onRefresh(); // Aktualisiert InventoryScreen
+    widget.onRefresh();
   }
 }

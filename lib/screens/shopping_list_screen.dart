@@ -3,6 +3,7 @@ import 'package:inventory_app/services/shopping_list.dart';
 import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/screens/inventory_screen.dart';
 import 'add_product_dialog.dart';
+import 'package:inventory_app/utils/colors.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -28,7 +29,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     });
   }
 
-Future<void> _addShoppingProduct() async {
+  Future<void> _addShoppingProduct() async {
     final categories = await _shoppingList.getCategories();
     final productData = await showDialog<ProductData>(
       context: context,
@@ -54,6 +55,7 @@ Future<void> _addShoppingProduct() async {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Shopping List"),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -104,22 +106,38 @@ Future<void> _addShoppingProduct() async {
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
-        return ExpansionTile(
-          title: Text(
-            category,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+        final lightColor = getCategoryLightColor(category);
+        final darkColor = getCategoryDarkColor(category);
+        return Container(
+          color: lightColor,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ExpansionTile(
+            title: Text(
+              category,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            backgroundColor: lightColor,
+            collapsedBackgroundColor: lightColor,
+            initiallyExpanded: true,
+            children:
+                categoryProducts
+                    .map(
+                      (product) => Container(
+                        color: darkColor,
+                        child: _buildShoppingTile(product, context),
+                      ),
+                    )
+                    .toList(),
           ),
-          initiallyExpanded: true,
-          children:
-              categoryProducts
-                  .map((product) => _buildShoppingTile(product, context))
-                  .toList(),
         );
       },
     );
   }
 
-Widget _buildShoppingTile(Product product, BuildContext context) {
+  Widget _buildShoppingTile(Product product, BuildContext context) {
     return FutureBuilder<List<Product>>(
       future: _shoppingList.getThresholdProducts(),
       builder: (context, snapshot) {
@@ -158,7 +176,7 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
     );
   }
 
- Future<void> _handleCheckbox(
+  Future<void> _handleCheckbox(
     Product product,
     bool? value,
     BuildContext context,
@@ -234,7 +252,7 @@ Widget _buildShoppingTile(Product product, BuildContext context) {
     }
   }
 
-Future<void> _deleteShoppingProduct(Product product) async {
+  Future<void> _deleteShoppingProduct(Product product) async {
     final inventoryProducts = await _shoppingList.getInventoryProducts();
     final isManual =
         product.id != null && !inventoryProducts.any((p) => p.id == product.id);
