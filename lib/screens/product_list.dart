@@ -6,12 +6,15 @@ import 'package:inventory_app/screens/product_settings_dialog.dart';
 import 'package:inventory_app/utils/colors.dart';
 import 'dart:math';
 
+// Globale Map für Collapse-Status
+final Map<String, bool> globalExpandedState = {};
+
 double roundToPrecision(double value, int precision) {
   final factor = pow(10, precision);
   return (value * factor).roundToDouble() / factor;
 }
 
-class ProductList extends StatelessWidget {
+class ProductList extends StatefulWidget {
   final List<Product> products;
   final List<Category> categories;
   final bool isLoading;
@@ -28,10 +31,26 @@ class ProductList extends StatelessWidget {
   });
 
   @override
+  _ProductListState createState() => _ProductListState();
+}
+
+class _ProductListState extends State<ProductList> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialisiere globalExpandedState für alle Kategorien, falls nicht vorhanden
+    for (var category in widget.categories) {
+      globalExpandedState.putIfAbsent(category.name, () => true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (products.isEmpty) return const Center(child: Text("No items yet."));
-    final groupedProducts = _groupByCategory(products);
+    if (widget.isLoading)
+      return const Center(child: CircularProgressIndicator());
+    if (widget.products.isEmpty)
+      return const Center(child: Text("No items yet."));
+    final groupedProducts = _groupByCategory(widget.products);
     if (groupedProducts.isEmpty) {
       return const Center(child: Text("No categories yet."));
     }
@@ -39,9 +58,9 @@ class ProductList extends StatelessWidget {
     final sortedCategories =
         groupedProducts.keys.toList()..sort((a, b) {
           final aIndex =
-              categories.firstWhere((cat) => cat.name == a).orderIndex;
+              widget.categories.firstWhere((cat) => cat.name == a).orderIndex;
           final bIndex =
-              categories.firstWhere((cat) => cat.name == b).orderIndex;
+              widget.categories.firstWhere((cat) => cat.name == b).orderIndex;
           return aIndex.compareTo(bIndex);
         });
 
@@ -66,7 +85,13 @@ class ProductList extends StatelessWidget {
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
-            initiallyExpanded: true,
+            initiallyExpanded:
+                globalExpandedState[category] ?? true, // Globale Map
+            onExpansionChanged: (expanded) {
+              setState(() {
+                globalExpandedState[category] = expanded; // Globale Map
+              });
+            },
             children: [
               Container(
                 color: darkColor,
@@ -89,6 +114,7 @@ class ProductList extends StatelessWidget {
     );
   }
 
+  // Rest unverändert
   Widget _buildProductTile(Product product, BuildContext context) {
     final isBelowThreshold = product.isBelowThreshold();
 
@@ -109,7 +135,7 @@ class ProductList extends StatelessWidget {
           decoration:
               isBelowThreshold
                   ? BoxDecoration(
-                    color: const Color.fromARGB(255, 241, 161, 155),
+                    color: Colors.red[300],
                     borderRadius: BorderRadius.circular(4),
                   )
                   : null,
@@ -158,6 +184,14 @@ class ProductList extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Map<String, List<Product>> _groupByCategory(List<Product> products) {
+    final Map<String, List<Product>> grouped = {};
+    for (var product in products) {
+      grouped.putIfAbsent(product.category, () => []).add(product);
+    }
+    return grouped;
   }
 
   Future<void> _editProductValue(Product product, BuildContext context) async {
@@ -241,13 +275,13 @@ class ProductList extends StatelessWidget {
       if (product.useFillLevel) {
         double newFillLevel = double.tryParse(result) ?? 1.0;
         newFillLevel = roundToPrecision(newFillLevel.clamp(0.0, 1.0), 1);
-        await manager.updateProductFillLevel(product.id!, newFillLevel);
+        await widget.manager.updateProductFillLevel(product.id!, newFillLevel);
       } else {
         int newQuantity = int.tryParse(result) ?? 1;
         if (newQuantity < 0) newQuantity = 0;
-        await manager.updateProductQuantity(product.id!, newQuantity);
+        await widget.manager.updateProductQuantity(product.id!, newQuantity);
       }
-      onRefresh();
+      widget.onRefresh();
     }
   }
 
@@ -257,26 +291,18 @@ class ProductList extends StatelessWidget {
       builder:
           (context) => ProductSettingsDialog(
             product: product,
-            categories: categories,
-            manager: manager,
-            onRefresh: onRefresh,
+            categories: widget.categories,
+            manager: widget.manager,
+            onRefresh: widget.onRefresh,
           ),
     );
-  }
-
-  Map<String, List<Product>> _groupByCategory(List<Product> products) {
-    final Map<String, List<Product>> grouped = {};
-    for (var product in products) {
-      grouped.putIfAbsent(product.category, () => []).add(product);
-    }
-    return grouped;
   }
 
   Future<void> _updateQuantity(Product product, int change) async {
     final newQuantity = product.quantity + change;
     if (newQuantity >= 0) {
-      await manager.updateProductQuantity(product.id!, newQuantity);
-      onRefresh();
+      await widget.manager.updateProductQuantity(product.id!, newQuantity);
+      widget.onRefresh();
     }
   }
 
@@ -284,9 +310,8 @@ class ProductList extends StatelessWidget {
     double newFillLevel = (product.fillLevel ?? 1.0) + change;
     newFillLevel = roundToPrecision(newFillLevel, 1);
     if (newFillLevel >= 0.2 && newFillLevel <= 1.0) {
-      debugPrint("Updating ${product.name} to newFillLevel: $newFillLevel");
-      await manager.updateProductFillLevel(product.id!, newFillLevel);
-      onRefresh();
+      await widget.manager.updateProductFillLevel(product.id!, newFillLevel);
+      widget.onRefresh();
     }
   }
 
@@ -310,8 +335,8 @@ class ProductList extends StatelessWidget {
           ),
     );
     if (confirmed == true) {
-      await manager.removeProduct(product.id!);
-      onRefresh();
+      await widget.manager.removeProduct(product.id!);
+      widget.onRefresh();
     }
   }
 
@@ -324,8 +349,8 @@ class ProductList extends StatelessWidget {
     final movedProduct = categoryProducts.removeAt(oldIndex);
     categoryProducts.insert(newIndex, movedProduct);
     for (int i = 0; i < categoryProducts.length; i++) {
-      await manager.updateProductOrder(categoryProducts[i].id!, i);
+      await widget.manager.updateProductOrder(categoryProducts[i].id!, i);
     }
-    onRefresh();
+    widget.onRefresh();
   }
 }

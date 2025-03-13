@@ -4,6 +4,7 @@ import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/screens/inventory_screen.dart';
 import 'add_product_dialog.dart';
 import 'package:inventory_app/utils/colors.dart';
+import 'package:inventory_app/screens/product_list.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
@@ -26,28 +27,11 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     final products = await _shoppingList.getShoppingList();
     setState(() {
       _shoppingProducts = products;
+      // Initialisiere globalExpandedState für Shopping-Liste-Kategorien
+      for (var product in products) {
+        globalExpandedState.putIfAbsent(product.category, () => true);
+      }
     });
-  }
-
-  Future<void> _addShoppingProduct() async {
-    final categories = await _shoppingList.getCategories();
-    final productData = await showDialog<ProductData>(
-      context: context,
-      builder:
-          (context) => AddProductDialog(
-            categories: categories.map((c) => c.name).toList(),
-          ),
-    );
-    if (productData != null && mounted) {
-      final validatedQuantity =
-          productData.quantity < 1 ? 1 : productData.quantity;
-      await _shoppingList.addToShoppingList(
-        productData.name,
-        validatedQuantity,
-        productData.category,
-      );
-      await _refreshShoppingList();
-    }
   }
 
   @override
@@ -121,7 +105,13 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
-            initiallyExpanded: true,
+            initiallyExpanded:
+                globalExpandedState[category] ?? true, // Globale Map
+            onExpansionChanged: (expanded) {
+              setState(() {
+                globalExpandedState[category] = expanded; // Globale Map
+              });
+            },
             children:
                 categoryProducts
                     .map(
@@ -249,6 +239,27 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
       }
+    }
+  }
+
+  Future<void> _addShoppingProduct() async {
+    final categories = await _shoppingList.getCategories();
+    final productData = await showDialog<ProductData>(
+      context: context,
+      builder:
+          (context) => AddProductDialog(
+            categories: categories.map((c) => c.name).toList(),
+          ),
+    );
+    if (productData != null && mounted) {
+      final validatedQuantity =
+          productData.quantity < 1 ? 1 : productData.quantity;
+      await _shoppingList.addToShoppingList(
+        productData.name,
+        validatedQuantity,
+        productData.category,
+      );
+      await _refreshShoppingList();
     }
   }
 
