@@ -4,6 +4,7 @@ import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/screens/inventory_screen.dart';
 import 'add_product_dialog.dart';
 import 'package:inventory_app/utils/colors.dart';
+import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/screens/product_list.dart';
 
 class ShoppingListScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class ShoppingListScreen extends StatefulWidget {
 class ShoppingListScreenState extends State<ShoppingListScreen> {
   final ShoppingList _shoppingList = ShoppingList();
   List<Product> _shoppingProducts = [];
+  List<Category> _categories = [];
 
   @override
   void initState() {
@@ -25,9 +27,10 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
 
   Future<void> _refreshShoppingList() async {
     final products = await _shoppingList.getShoppingList();
+    final categories = await _shoppingList.getCategories();
     setState(() {
       _shoppingProducts = products;
-      // Initialisiere globalExpandedState für Shopping-Liste-Kategorien
+      _categories = categories;
       for (var product in products) {
         globalExpandedState.putIfAbsent(product.category, () => true);
       }
@@ -84,7 +87,24 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
 
   Widget _buildShoppingList(BuildContext context) {
     final groupedProducts = _groupByCategory(_shoppingProducts);
-    final sortedCategories = groupedProducts.keys.toList()..sort();
+    final sortedCategories =
+        groupedProducts.keys.toList()..sort((a, b) {
+          final aIndex =
+              _categories
+                  .firstWhere(
+                    (cat) => cat.name == a,
+                    orElse: () => Category(name: a, orderIndex: 999),
+                  )
+                  .orderIndex;
+          final bIndex =
+              _categories
+                  .firstWhere(
+                    (cat) => cat.name == b,
+                    orElse: () => Category(name: b, orderIndex: 999),
+                  )
+                  .orderIndex;
+          return aIndex.compareTo(bIndex);
+        });
     return ListView.builder(
       itemCount: sortedCategories.length,
       itemBuilder: (context, index) {
