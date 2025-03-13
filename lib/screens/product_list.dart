@@ -109,7 +109,7 @@ class ProductList extends StatelessWidget {
           decoration:
               isBelowThreshold
                   ? BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: const Color.fromARGB(255, 241, 161, 155),
                     borderRadius: BorderRadius.circular(4),
                   )
                   : null,
