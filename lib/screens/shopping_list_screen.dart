@@ -170,11 +170,11 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _editShoppingProductName(product),
-            ),
-            if (isManual)
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _editShoppingProductName(product),
+              ),
+              if (isManual)
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _deleteShoppingProduct(product),
@@ -225,7 +225,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     BuildContext context,
   ) async {
     if (value == true) {
-      int newQuantity = 1;
+      int? newQuantity; // Änderung: null als Standard
       final inventoryProducts = await _shoppingList.getInventoryProducts();
       final isManual =
           product.id != null &&
@@ -246,8 +246,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                       onPressed: () {
                         int current = int.tryParse(controller.text) ?? 1;
                         if (current > 1)
-                          controller.text =
-                              (current - 1).toString();
+                          controller.text = (current - 1).toString();
                       },
                     ),
                     Expanded(
@@ -274,7 +273,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(context), // Gibt null zurück
                     child: const Text("Cancel"),
                   ),
                   TextButton(
@@ -286,9 +285,12 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                 ],
               ),
         );
-        newQuantity = result ?? 1;
+        if (result == null) return;
+        newQuantity = result; 
+      } else {
+        newQuantity = 1;
       }
-      if (mounted) {
+      if (mounted && newQuantity != null) {
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
       }
