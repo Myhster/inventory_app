@@ -136,9 +136,9 @@ class InventoryScreenState extends State<InventoryScreen> {
   Future<void> _addManualProduct() async {
     final productData = await showDialog<ProductData>(
       context: context,
-      builder:
-          (context) => AddProductDialog(
+    builder: (context) => AddProductDialog(
             categories: _categories.map((c) => c.name).toList(),
+      selectedCategory: null,
           ),
     );
     if (productData != null && mounted) {

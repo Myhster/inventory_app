@@ -4,9 +4,9 @@ import 'package:inventory_app/models/category.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
 import 'package:inventory_app/screens/product_settings_dialog.dart';
 import 'package:inventory_app/utils/colors.dart';
+import 'package:inventory_app/screens/add_product_dialog.dart';
 import 'dart:math';
 
-// Globale Map für Collapse-Status
 final Map<String, bool> globalExpandedState = {};
 
 double roundToPrecision(double value, int precision) {
@@ -76,20 +76,29 @@ class _ProductListState extends State<ProductList> {
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: ExpansionTile(
             key: ValueKey(category),
-            title: Text(
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
               category,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 20),
+                  onPressed: () => _addProductToCategory(category),
+                ),
+              ],
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
-            initiallyExpanded:
-                globalExpandedState[category] ?? true, // Globale Map
+            initiallyExpanded: globalExpandedState[category] ?? true,
             onExpansionChanged: (expanded) {
               setState(() {
-                globalExpandedState[category] = expanded; // Globale Map
+                globalExpandedState[category] = expanded;
               });
             },
             children: [
@@ -98,13 +107,8 @@ class _ProductListState extends State<ProductList> {
                 child: ReorderableListView(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  onReorder:
-                      (oldIndex, newIndex) =>
-                          _onReorder(categoryProducts, oldIndex, newIndex),
-                  children:
-                      categoryProducts
-                          .map((product) => _buildProductTile(product, context))
-                          .toList(),
+                  onReorder: (oldIndex, newIndex) => _onReorder(categoryProducts, oldIndex, newIndex),
+                  children: categoryProducts.map((product) => _buildProductTile(product, context)).toList(),
                 ),
               ),
             ],
@@ -112,6 +116,30 @@ class _ProductListState extends State<ProductList> {
         );
       },
     );
+  }
+
+  Future<void> _addProductToCategory(String category) async {
+    final productData = await showDialog<ProductData>(
+      context: context,
+      builder: (context) => AddProductDialog(
+        categories: widget.categories.map((c) => c.name).toList(),
+      selectedCategory: category, 
+      initialName: "",
+      ),
+    );
+    if (productData != null && mounted) {
+      await widget.manager.addProduct(
+        Product(
+          name: productData.name,
+          quantity: productData.quantity,
+        category: category, 
+          useFillLevel: productData.useFillLevel,
+          fillLevel: productData.useFillLevel ? 1.0 : null,
+          threshold: productData.useFillLevel ? 0.2 : 1.0,
+        ),
+      );
+      widget.onRefresh();
+    }
   }
 
   // Rest unverändert
