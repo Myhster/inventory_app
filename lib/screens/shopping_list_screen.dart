@@ -225,11 +225,12 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     BuildContext context,
   ) async {
     if (value == true) {
-      int? newQuantity; // Änderung: null als Standard
+      int newQuantity = 1;
       final inventoryProducts = await _shoppingList.getInventoryProducts();
       final isManual =
           product.id != null &&
           !inventoryProducts.any((p) => p.id == product.id);
+
       if (!product.useFillLevel || isManual) {
         final controller = TextEditingController(
           text: product.quantity.toString(),
@@ -286,13 +287,63 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
               ),
         );
         if (result == null) return;
-        newQuantity = result; 
-      } else {
-        newQuantity = 1;
+        newQuantity = result;
       }
-      if (mounted && newQuantity != null) {
+
+      if (mounted) {
+
+        final originalQuantity = product.quantity;
+        final originalFillLevel = product.fillLevel;
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
+
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Added to Inventory"),
+              action: SnackBarAction(
+                label: "Undo",
+                onPressed: () async {
+                  if (isManual && product.id != null) {
+
+                    await _shoppingList.addToShoppingList(
+                      product.name,
+                      originalQuantity,
+                      product.category,
+                    );
+                  } else {
+
+                    final existing = inventoryProducts.firstWhere(
+                      (p) => p.name == product.name,
+                      orElse:
+                          () => Product(
+                            name: product.name,
+                            quantity: 0,
+                            category: product.category,
+                          ),
+                    );
+                    if (existing.id != null) {
+                      if (product.useFillLevel) {
+                        await _shoppingList.updateProductFillLevel(
+                          existing.id!,
+                          originalFillLevel ?? 1.0,
+                        );
+                      } else {
+                        await _shoppingList.updateProductQuantity(
+                          existing.id!,
+                          existing.quantity - newQuantity,
+                        );
+                      }
+                    }
+                  }
+                  await _refreshShoppingList();
+                },
+              ),
+              duration: const Duration(seconds: 2), // 2 Sekunden
+            ),
+          );
+        }
       }
     }
   }

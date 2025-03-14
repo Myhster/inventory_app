@@ -116,7 +116,15 @@ class ShoppingList {
     return inventoryProducts.where((p) => p.isBelowThreshold()).toList();
   }
 
-Future<void> updateShoppingProductName(int id, String newName) async {
+  Future<void> updateProductFillLevel(int id, double fillLevel) async {
+    await _manager.updateProductFillLevel(id, fillLevel);
+  }
+
+  Future<void> updateProductQuantity(int id, int newQuantity) async {
+    await _manager.updateProductQuantity(id, newQuantity);
+  }
+
+  Future<void> updateShoppingProductName(int id, String newName) async {
     final inventoryProducts = await _manager.getProducts();
     final isInventoryItem = inventoryProducts.any((p) => p.id == id);
 
