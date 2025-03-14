@@ -170,7 +170,11 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isManual) // Nur für manuelle Produkte
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _editShoppingProductName(product),
+            ),
+            if (isManual)
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _deleteShoppingProduct(product),
@@ -184,6 +188,35 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
         );
       },
     );
+  }
+
+  Future<void> _editShoppingProductName(Product product) async {
+    final controller = TextEditingController(text: product.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Edit Product Name"),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: "Name"),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text("Save"),
+              ),
+            ],
+          ),
+    );
+    if (newName != null && newName.trim().isNotEmpty && mounted) {
+      await _shoppingList.updateShoppingProductName(product.id!, newName);
+      await _refreshShoppingList();
+    }
   }
 
   Future<void> _handleCheckbox(
@@ -214,7 +247,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                         int current = int.tryParse(controller.text) ?? 1;
                         if (current > 1)
                           controller.text =
-                              (current - 1).toString(); // Nicht unter 1
+                              (current - 1).toString();
                       },
                     ),
                     Expanded(
@@ -226,7 +259,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
                           if (val.isEmpty || int.parse(val) < 1)
-                            controller.text = "1"; // Mindestens 1
+                            controller.text = "1";
                         },
                       ),
                     ),
@@ -253,7 +286,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                 ],
               ),
         );
-        newQuantity = result ?? 1; // Standardwert ist 1
+        newQuantity = result ?? 1;
       }
       if (mounted) {
         await _shoppingList.moveToInventory(product, newQuantity);

@@ -25,8 +25,7 @@ class ShoppingList {
             );
             return fillLevel <= threshold;
           } else {
-            return product.quantity <=
-                (product.threshold?.toInt() ?? 0);
+            return product.quantity <= (product.threshold?.toInt() ?? 0);
           }
         }).toList();
 
@@ -115,5 +114,16 @@ class ShoppingList {
   Future<List<Product>> getThresholdProducts() async {
     final inventoryProducts = await _manager.getProducts();
     return inventoryProducts.where((p) => p.isBelowThreshold()).toList();
+  }
+
+Future<void> updateShoppingProductName(int id, String newName) async {
+    final inventoryProducts = await _manager.getProducts();
+    final isInventoryItem = inventoryProducts.any((p) => p.id == id);
+
+    if (isInventoryItem) {
+      await _manager.updateProduct(id, name: newName);
+    } else {
+      await _manager.updateShoppingItemName(id, newName);
+    }
   }
 }

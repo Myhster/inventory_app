@@ -22,6 +22,7 @@ class ProductSettingsDialog extends StatefulWidget {
 }
 
 class ProductSettingsDialogState extends State<ProductSettingsDialog> {
+  late String _name;
   late String _category;
   late double? _threshold;
   late bool _useFillLevel;
@@ -30,11 +31,11 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
   @override
   void initState() {
     super.initState();
+    _name = widget.product.name;
     _category = widget.product.category;
     _threshold = widget.product.threshold;
     _useFillLevel = widget.product.useFillLevel;
     _fillLevel = widget.product.fillLevel ?? 1.0;
-    // Fix: Begrenze threshold auf 0.8 nur bei useFillLevel
     if (_useFillLevel && (_threshold == null || _threshold! > 0.8)) {
       _threshold = 0.8;
     }
@@ -43,11 +44,16 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("Settings for ${widget.product.name}"),
+      title: const Text("Product Settings"),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            TextField(
+              decoration: const InputDecoration(labelText: "Name"),
+              controller: TextEditingController(text: _name),
+              onChanged: (value) => _name = value,
+            ),
             DropdownButtonFormField<String>(
               value: _category,
               decoration: const InputDecoration(labelText: "Category"),
@@ -99,15 +105,13 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                         if (parsed != null)
                           _threshold =
                               parsed
-                                  .toDouble(); // Als double speichern, aber Ganzzahl
+                                  .toDouble();
                       },
                     ),
                   ),
                   Checkbox(
                     value: _threshold == null,
-                    onChanged:
-                        (value) =>
-                            setState(() => _threshold = value! ? null : 1.0),
+                    onChanged: (value) => setState(() => _threshold = value! ? null : 1.0),
                   ),
                   const Text("No Shopping List"),
                 ],
@@ -118,10 +122,9 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                   const Text("Fill Level:"),
                   Slider(
                     value: _fillLevel ?? 1.0,
-                    min: 0.0, // Geändert von 0.2 auf 0.0
+                    min: 0.0,
                     max: 1.0,
-                    divisions:
-                        10, // Geändert von 4 auf 10 für feinere Schritte (0.0, 0.1, ..., 1.0)
+                    divisions: 10,
                     label: _fillLevel?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _fillLevel = value),
                   ),
@@ -167,6 +170,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
         ),
         TextButton(
           onPressed: () async {
+            if (_name.trim().isEmpty) return;
             await widget.manager.updateProductSettings(
               widget.product.id!,
               _category,
@@ -174,8 +178,12 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
               _useFillLevel,
               _useFillLevel ? _fillLevel : null,
             );
+            await widget.manager.updateProduct(
+              widget.product.id!,
+              name: _name,
+            );
             widget.onRefresh();
-            Navigator.pop(context);
+            if (mounted) Navigator.pop(context);
           },
           child: const Text("Save"),
         ),

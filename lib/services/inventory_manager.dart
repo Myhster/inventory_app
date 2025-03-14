@@ -37,6 +37,16 @@ class InventoryManager {
     await _dbService.removeShoppingItem(id);
   }
 
+    Future<void> updateShoppingItemName(int id, String newName) async {
+    await _dbService.initDatabase();
+    await _dbService.update(
+      'shopping_list',
+      {'name': newName},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<List<Product>> getProducts() async {
     return await _dbService.getProducts();
   }
@@ -96,5 +106,28 @@ class InventoryManager {
 
   Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
     await _dbService.updateCategoryOrder(id, newOrderIndex);
+  }
+
+  Future<void> updateProduct(
+    int id, {
+    String? name,
+    String? category,
+    bool? useFillLevel,
+    double? threshold,
+  }) async {
+    await _dbService.initDatabase();
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (category != null) updates['category'] = category;
+    if (useFillLevel != null) updates['useFillLevel'] = useFillLevel ? 1 : 0;
+    if (threshold != null) updates['threshold'] = threshold;
+    if (updates.isNotEmpty) {
+      await _dbService.update(
+        'products',
+        updates,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
   }
 }
