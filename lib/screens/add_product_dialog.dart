@@ -12,6 +12,8 @@ class AddProductDialog extends StatefulWidget {
     this.selectedCategory,
   });
 
+  static String? _lastSelectedCategory;
+
   @override
   AddProductDialogState createState() => AddProductDialogState();
 }
@@ -27,8 +29,15 @@ class AddProductDialogState extends State<AddProductDialog> {
     super.initState();
     _qtyController = TextEditingController(text: "1");
     _nameController = TextEditingController(text: widget.initialName ?? "");
-    _category = widget.selectedCategory ??
+
+    if (widget.selectedCategory != null) {
+
+      _category = widget.selectedCategory!;
+    } else {
+
+      _category = AddProductDialog._lastSelectedCategory ??
         (widget.categories.isNotEmpty ? widget.categories.first : "Unsorted");
+    }
   }
 
   @override
@@ -88,7 +97,12 @@ class AddProductDialogState extends State<AddProductDialog> {
               items: categoryOptions
                   .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
                     .toList(),
-              onChanged: (value) => setState(() => _category = value ?? categoryOptions.first),
+              onChanged: (value) {
+                setState(() {
+                  _category = value ?? categoryOptions.first;
+                  AddProductDialog._lastSelectedCategory = _category;
+                });
+              },
           ),
           CheckboxListTile(
             title: const Text("Use Fill Level"),
