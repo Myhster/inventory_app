@@ -37,7 +37,7 @@ class InventoryManager {
     await _dbService.removeShoppingItem(id);
   }
 
-    Future<void> updateShoppingItemName(int id, String newName) async {
+  Future<void> updateShoppingItemName(int id, String newName) async {
     await _dbService.initDatabase();
     await _dbService.update(
       'shopping_list',
@@ -106,6 +106,10 @@ class InventoryManager {
 
   Future<void> updateCategoryOrder(int id, int newOrderIndex) async {
     await _dbService.updateCategoryOrder(id, newOrderIndex);
+  }
+
+  Future<void> updateCategoryColor(int id, String color) async {
+    await _dbService.updateCategoryColor(id, color);
   }
 
   Future<void> updateProduct(

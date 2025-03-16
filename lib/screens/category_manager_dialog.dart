@@ -57,7 +57,14 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
   }
 
   Widget _buildCategoryTile(Category category) {
-    final lightColor = getCategoryLightColor(category.name);
+    final lightColor = getCategoryLightColor(
+      category.name,
+      widget.categories.firstWhere((c) => c.name == category.name).color,
+    );
+    final darkColor = getCategoryDarkColor(
+      category.name,
+      widget.categories.firstWhere((c) => c.name == category.name).color,
+    );
     return ListTile(
       key: ValueKey(category.id),
       title: Text(category.name),
@@ -76,7 +83,6 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
                   await widget.manager.removeCategory(category.id!);
                   setState(() {
                     _localCategories.remove(category);
-                  categoryColorAssignments.remove(category.name); // Farbzuweisung entfernen
                   });
                   widget.onRefresh();
                 },
@@ -136,8 +142,7 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
               TextButton(
                 onPressed: () async {
                   if (name.isNotEmpty) {
-                    await widget.manager.addCategory(Category(name: name));
-                categoryColorAssignments[name] = selectedColor; // Farbe zuweisen
+              await widget.manager.addCategory(Category(name: name, color: selectedColor));
                     Navigator.pop(context, true);
                   }
                 },
@@ -155,7 +160,7 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
   }
 
   Future<void> _changeCategoryColor(Category category) async {
-    String selectedColor = categoryColorAssignments[category.name] ?? 'Gray';
+  String selectedColor = category.color ?? 'Gray';
     final changed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -194,9 +199,7 @@ class CategoryManagerDialogState extends State<CategoryManagerDialog> {
       ),
     );
     if (changed == true && mounted) {
-      setState(() {
-        categoryColorAssignments[category.name] = selectedColor;
-      });
+    await widget.manager.updateCategoryColor(category.id!, selectedColor);
       widget.onRefresh();
     }
   }
