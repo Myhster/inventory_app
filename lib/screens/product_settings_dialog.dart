@@ -81,41 +81,49 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                       _threshold = 1.0;
                     } else if (value &&
                         (_threshold == null || _threshold! > 0.8)) {
-                      // Fix: Max 0.8 bei Aktivierung
                       _threshold = 0.2;
                     }
                   }),
             ),
             if (!_useFillLevel)
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: "Quantity Threshold",
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: "Quantity Threshold",
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: false,
+                          ),
+                          controller: TextEditingController(
+                            text: _threshold?.toInt().toString() ?? "",
+                          ),
+                          onChanged: (value) {
+                            final parsed = int.tryParse(value);
+                            if (parsed != null) _threshold = parsed.toDouble();
+                          },
+                        ),
                       ),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: false,
-                      ), // Nur Ganzzahlen erlauben
-                      controller: TextEditingController(
-                        text: _threshold?.toInt().toString() ?? "",
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _threshold == null,
+                        onChanged:
+                            (value) => setState(
+                              () => _threshold = value! ? null : 1.0,
+                            ),
                       ),
-                      onChanged: (value) {
-                        final parsed = int.tryParse(value);
-                        if (parsed != null)
-                          _threshold =
-                              parsed
-                                  .toDouble();
-                      },
-                    ),
+                      const Text("No Shopping List"),
+                    ],
                   ),
-                  Checkbox(
-                    value: _threshold == null,
-                    onChanged: (value) => setState(() => _threshold = value! ? null : 1.0),
-                  ),
-                  const Text("No Shopping List"),
                 ],
               ),
+
             if (_useFillLevel)
               Column(
                 children: [
@@ -178,10 +186,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
               _useFillLevel,
               _useFillLevel ? _fillLevel : null,
             );
-            await widget.manager.updateProduct(
-              widget.product.id!,
-              name: _name,
-            );
+            await widget.manager.updateProduct(widget.product.id!, name: _name);
             widget.onRefresh();
             if (mounted) Navigator.pop(context);
           },
