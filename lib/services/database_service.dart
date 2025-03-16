@@ -10,7 +10,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'inventory.db');
     _database = await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await _createTables(db);
         await _addShoppingListTable(db);
@@ -74,10 +74,33 @@ class DatabaseService {
         if (oldVersion < 7) {
           await _addShoppingListTable(db);
         }
+        if (oldVersion < 8) {
+          await db.execute(
+            'ALTER TABLE categories ADD COLUMN color TEXT DEFAULT "Gray"',
+          );
+          final Map<String, String> defaultColors = {
+            'Unsorted': 'Gray',
+            'Fruits': 'Orange',
+            'Vegetables': 'Green',
+            'Bread': 'Brown',
+            'Detergents': 'Blue',
+          };
+          final categories = await db.query('categories');
+          for (var cat in categories) {
+            String name = cat['name'] as String;
+            String color = defaultColors[name] ?? 'Gray';
+            await db.update(
+              'categories',
+              {'color': color},
+              where: 'id = ?',
+              whereArgs: [cat['id']],
+            );
+          }
+        }
       },
     );
   }
-  
+
   Future<void> _addShoppingListTable(Database db) async {
     await db.execute('''
       CREATE TABLE shopping_list (
@@ -106,19 +129,23 @@ class DatabaseService {
       CREATE TABLE categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
-        orderIndex INTEGER DEFAULT 0
+        orderIndex INTEGER DEFAULT 0,
+        color TEXT DEFAULT "Gray"
       )
     ''');
-    for (var cat in [
-      'Unsorted',
-      'Fruits',
-      'Vegetables',
-      'Bread',
-      'Detergents',
-    ]) {
+    final Map<String, String> defaultColors = {
+      'Unsorted': 'Gray',
+      'Fruits': 'Orange',
+      'Vegetables': 'Green',
+      'Bread': 'Brown',
+      'Detergents': 'Blue',
+    };
+    int orderIndex = 0;
+    for (var cat in defaultColors.keys) {
       await db.insert('categories', {
         'name': cat,
-        'orderIndex': 0,
+        'orderIndex': orderIndex++,
+        'color': defaultColors[cat],
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
@@ -206,6 +233,7 @@ class DatabaseService {
     return await _database!.insert('categories', {
       ...category.toMap(),
       'orderIndex': orderIndex,
+      'color': category.color ?? 'Gray',
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
@@ -270,5 +298,15 @@ class DatabaseService {
   Future<void> removeShoppingItem(int id) async {
     await initDatabase();
     await _database!.delete('shopping_list', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateCategoryColor(int id, String color) async {
+    await initDatabase();
+    await _database!.update(
+      'categories',
+      {'color': color},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

@@ -69,8 +69,14 @@ class _ProductListState extends State<ProductList> {
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
-        final lightColor = getCategoryLightColor(category);
-        final darkColor = getCategoryDarkColor(category);
+        final lightColor = getCategoryLightColor(
+          category,
+          widget.categories.firstWhere((c) => c.name == category).color,
+        );
+        final darkColor = getCategoryDarkColor(
+          category,
+          widget.categories.firstWhere((c) => c.name == category).color,
+        );
         return Container(
           color: lightColor,
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -80,11 +86,11 @@ class _ProductListState extends State<ProductList> {
               children: [
                 Expanded(
                   child: Text(
-              category,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+                    category,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -107,8 +113,13 @@ class _ProductListState extends State<ProductList> {
                 child: ReorderableListView(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  onReorder: (oldIndex, newIndex) => _onReorder(categoryProducts, oldIndex, newIndex),
-                  children: categoryProducts.map((product) => _buildProductTile(product, context)).toList(),
+                  onReorder:
+                      (oldIndex, newIndex) =>
+                          _onReorder(categoryProducts, oldIndex, newIndex),
+                  children:
+                      categoryProducts
+                          .map((product) => _buildProductTile(product, context))
+                          .toList(),
                 ),
               ),
             ],
@@ -121,18 +132,19 @@ class _ProductListState extends State<ProductList> {
   Future<void> _addProductToCategory(String category) async {
     final productData = await showDialog<ProductData>(
       context: context,
-      builder: (context) => AddProductDialog(
-        categories: widget.categories.map((c) => c.name).toList(),
-      selectedCategory: category, 
-      initialName: "",
-      ),
+      builder:
+          (context) => AddProductDialog(
+            categories: widget.categories.map((c) => c.name).toList(),
+            selectedCategory: category,
+            initialName: "",
+          ),
     );
     if (productData != null && mounted) {
       await widget.manager.addProduct(
         Product(
           name: productData.name,
           quantity: productData.quantity,
-        category: category, 
+          category: category,
           useFillLevel: productData.useFillLevel,
           fillLevel: productData.useFillLevel ? 1.0 : null,
           threshold: productData.useFillLevel ? 0.2 : 1.0,

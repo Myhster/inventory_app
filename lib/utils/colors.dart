@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Farben als eigenständige Optionen (aus deinem JSON)
 final Map<String, Map<String, Color>> availableColors = {
   'Green': {
     'light': const Color.fromRGBO(149, 196, 144, 1),
@@ -44,27 +43,14 @@ final Map<String, Map<String, Color>> availableColors = {
   },
 };
 
-// Default-Zuweisungen für Kategorien (änderbar)
-final Map<String, String> categoryColorAssignments = {
-  'Unsorted': 'Gray',
-  'Fruits': 'Orange',
-  'Vegetables': 'Green',
-  'Bread': 'Brown',
-  'Detergents': 'Blue',
-};
-
-// Funktionen zur Farbabfrage
-Color getCategoryLightColor(String category) {
-  final colorName =
-      categoryColorAssignments[category] ?? 'Gray'; // Fallback: Gray
+Color getCategoryLightColor(String category, String? color) {
+  final colorName = color ?? 'Gray';
   return availableColors[colorName]!['light']!;
 }
 
-Color getCategoryDarkColor(String category) {
-  final colorName =
-      categoryColorAssignments[category] ?? 'Gray'; // Fallback: Gray
+Color getCategoryDarkColor(String category, String? color) {
+  final colorName = color ?? 'Gray';
   return availableColors[colorName]!['dark']!;
 }
 
-// Liste für Dropdown
 final List<String> colorOptions = availableColors.keys.toList();

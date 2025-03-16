@@ -110,8 +110,13 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
-        final lightColor = getCategoryLightColor(category);
-        final darkColor = getCategoryDarkColor(category);
+      // Hole die Farbe aus der Kategorie
+      final categoryObj = _categories.firstWhere(
+        (c) => c.name == category,
+        orElse: () => Category(name: category, color: 'Gray'),
+      );
+      final lightColor = getCategoryLightColor(category, categoryObj.color);
+      final darkColor = getCategoryDarkColor(category, categoryObj.color);
         return Container(
           color: lightColor,
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -125,11 +130,10 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
-            initiallyExpanded:
-                globalExpandedState[category] ?? true, // Globale Map
+          initiallyExpanded: globalExpandedState[category] ?? true,
             onExpansionChanged: (expanded) {
               setState(() {
-                globalExpandedState[category] = expanded; // Globale Map
+              globalExpandedState[category] = expanded;
               });
             },
             children:
@@ -291,13 +295,10 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
       }
 
       if (mounted) {
-
         final originalQuantity = product.quantity;
         final originalFillLevel = product.fillLevel;
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
-
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -306,14 +307,12 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                 label: "Undo",
                 onPressed: () async {
                   if (isManual && product.id != null) {
-
                     await _shoppingList.addToShoppingList(
                       product.name,
                       originalQuantity,
                       product.category,
                     );
                   } else {
-
                     final existing = inventoryProducts.firstWhere(
                       (p) => p.name == product.name,
                       orElse:
