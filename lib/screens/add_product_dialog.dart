@@ -4,12 +4,14 @@ class AddProductDialog extends StatefulWidget {
   final String? initialName;
   final List<String> categories;
   final String? selectedCategory;
+  final bool disableFillLevel;
 
   const AddProductDialog({
     super.key,
     this.initialName,
     required this.categories,
     this.selectedCategory,
+    this.disableFillLevel = false,
   });
 
   static String? _lastSelectedCategory;
@@ -30,6 +32,7 @@ class AddProductDialogState extends State<AddProductDialog> {
     _qtyController = TextEditingController(text: "1");
     _nameController = TextEditingController(text: widget.initialName ?? "");
 
+    if (widget.disableFillLevel) _useFillLevel = false;
     if (widget.selectedCategory != null) {
       _category = widget.selectedCategory!;
     } else {
@@ -154,13 +157,14 @@ class AddProductDialogState extends State<AddProductDialog> {
                 },
               ),
             SizedBox(height: 16),
-            CheckboxListTile(
-              title: Text("Use Fill Level", style: TextStyle(fontSize: 16)),
-              value: _useFillLevel,
-              onChanged:
-                  (value) => setState(() => _useFillLevel = value ?? false),
-              activeColor: Colors.teal,
-            ),
+            if (!widget.disableFillLevel)
+              CheckboxListTile(
+                title: Text("Use Fill Level"),
+                value: _useFillLevel,
+                onChanged:
+                    (value) => setState(() => _useFillLevel = value ?? false),
+                activeColor: Colors.teal,
+              ),
           ],
         ),
       ),

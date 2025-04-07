@@ -18,6 +18,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   final ShoppingList _shoppingList = ShoppingList();
   List<Product> _shoppingProducts = [];
   List<Category> _categories = [];
+  List<Product> _inventoryProducts = [];
 
   @override
   void initState() {
@@ -28,13 +29,17 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   Future<void> _refreshShoppingList() async {
     final products = await _shoppingList.getShoppingList();
     final categories = await _shoppingList.getCategories();
-    setState(() {
-      _shoppingProducts = products;
-      _categories = categories;
-      for (var product in products) {
-        globalExpandedState.putIfAbsent(product.category, () => true);
-      }
-    });
+    final inventory = await _shoppingList.getInventoryProducts();
+    if (mounted) {
+      setState(() {
+        _shoppingProducts = products;
+        _categories = categories;
+        _inventoryProducts = inventory;
+        for (var product in products) {
+          globalExpandedState.putIfAbsent(product.category, () => true);
+        }
+      });
+    }
   }
 
   @override
@@ -55,7 +60,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
               ? const Center(child: Text("Nothing to buy yet!"))
               : _buildShoppingList(context),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addShoppingProduct,
+        onPressed: _addManualShoppingProduct,
         tooltip: "Add Product",
         heroTag: "addShoppingProduct",
         child: const Icon(Icons.add),
@@ -110,13 +115,13 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
       itemBuilder: (context, index) {
         final category = sortedCategories[index];
         final categoryProducts = groupedProducts[category]!;
-      // Hole die Farbe aus der Kategorie
-      final categoryObj = _categories.firstWhere(
-        (c) => c.name == category,
-        orElse: () => Category(name: category, color: 'Gray'),
-      );
-      final lightColor = getCategoryLightColor(category, categoryObj.color);
-      final darkColor = getCategoryDarkColor(category, categoryObj.color);
+        // Hole die Farbe aus der Kategorie
+        final categoryObj = _categories.firstWhere(
+          (c) => c.name == category,
+          orElse: () => Category(name: category, color: 'Gray'),
+        );
+        final lightColor = getCategoryLightColor(category, categoryObj.color);
+        final darkColor = getCategoryDarkColor(category, categoryObj.color);
         return Container(
           color: lightColor,
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -130,10 +135,10 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
-          initiallyExpanded: globalExpandedState[category] ?? true,
+            initiallyExpanded: globalExpandedState[category] ?? true,
             onExpansionChanged: (expanded) {
               setState(() {
-              globalExpandedState[category] = expanded;
+                globalExpandedState[category] = expanded;
               });
             },
             children:
@@ -152,45 +157,36 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildShoppingTile(Product product, BuildContext context) {
-    return FutureBuilder<List<Product>>(
-      future: _shoppingList.getThresholdProducts(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const ListTile(title: Text("Loading..."));
-        final thresholdProducts = snapshot.data!;
-        final isManual =
-            product.id != null &&
-            !thresholdProducts.any((p) => p.id == product.id);
-        final toBuy =
-            isManual
-                ? product.quantity
-                : product.useFillLevel
-                ? 1
-                : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
-                    .clamp(1, double.infinity)
-                    .toInt();
-        return ListTile(
-          title: Text(product.name),
-          subtitle: Text("To Buy: $toBuy"),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _editShoppingProductName(product),
-              ),
-              if (isManual)
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteShoppingProduct(product),
-                ),
-              Checkbox(
-                value: false,
-                onChanged: (value) => _handleCheckbox(product, value, context),
-              ),
-            ],
+    final isManual =
+        product.id != null &&
+        !_inventoryProducts.any((p) => p.id == product.id);
+    final toBuy =
+        isManual
+            ? product.quantity
+            : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
+                .clamp(1, double.infinity)
+                .toInt();
+    return ListTile(
+      title: Text(product.name),
+      subtitle: Text("To Buy: $toBuy"),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: () => _editShoppingProductName(product),
           ),
-        );
-      },
+          if (isManual)
+            IconButton(
+              icon: Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _deleteShoppingProduct(product),
+            ),
+          Checkbox(
+            value: false,
+            onChanged: (value) => _handleCheckbox(product, value, context),
+          ),
+        ],
+      ),
     );
   }
 
@@ -230,26 +226,29 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
   ) async {
     if (value == true) {
       int newQuantity = 1;
-      final inventoryProducts = await _shoppingList.getInventoryProducts();
       final isManual =
           product.id != null &&
-          !inventoryProducts.any((p) => p.id == product.id);
+          !_inventoryProducts.any((p) => p.id == product.id);
 
       if (!product.useFillLevel || isManual) {
-        final controller = TextEditingController(
-          text: product.quantity.toString(),
-        );
+        final toBuy =
+            isManual
+                ? product.quantity
+                : ((product.threshold?.toInt() ?? 1) - product.quantity + 1)
+                    .clamp(1, double.infinity)
+                    .toInt();
+        final controller = TextEditingController(text: toBuy.toString());
         final result = await showDialog<int>(
           context: context,
           builder:
               (context) => AlertDialog(
-                title: const Text("Add to Inventory"),
+                title: Text("Add to Inventory"),
                 content: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove),
+                      icon: Icon(Icons.remove),
                       onPressed: () {
-                        int current = int.tryParse(controller.text) ?? 1;
+                        int current = int.tryParse(controller.text) ?? toBuy;
                         if (current > 1)
                           controller.text = (current - 1).toString();
                       },
@@ -257,9 +256,7 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                     Expanded(
                       child: TextField(
                         controller: controller,
-                        decoration: const InputDecoration(
-                          labelText: "Quantity",
-                        ),
+                        decoration: InputDecoration(labelText: "Quantity"),
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
                           if (val.isEmpty || int.parse(val) < 1)
@@ -268,9 +265,9 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add),
+                      icon: Icon(Icons.add),
                       onPressed: () {
-                        int current = int.tryParse(controller.text) ?? 1;
+                        int current = int.tryParse(controller.text) ?? toBuy;
                         controller.text = (current + 1).toString();
                       },
                     ),
@@ -278,14 +275,14 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context), // Gibt null zurück
-                    child: const Text("Cancel"),
+                    onPressed: () => Navigator.pop(context),
+                    child: Text("Cancel"),
                   ),
                   TextButton(
                     onPressed:
                         () =>
                             Navigator.pop(context, int.parse(controller.text)),
-                    child: const Text("Confirm"),
+                    child: Text("Confirm"),
                   ),
                 ],
               ),
@@ -295,51 +292,13 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
       }
 
       if (mounted) {
-        final originalQuantity = product.quantity;
-        final originalFillLevel = product.fillLevel;
         await _shoppingList.moveToInventory(product, newQuantity);
         await _refreshShoppingList();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text("Added to Inventory"),
-              action: SnackBarAction(
-                label: "Undo",
-                onPressed: () async {
-                  if (isManual && product.id != null) {
-                    await _shoppingList.addToShoppingList(
-                      product.name,
-                      originalQuantity,
-                      product.category,
-                    );
-                  } else {
-                    final existing = inventoryProducts.firstWhere(
-                      (p) => p.name == product.name,
-                      orElse:
-                          () => Product(
-                            name: product.name,
-                            quantity: 0,
-                            category: product.category,
-                          ),
-                    );
-                    if (existing.id != null) {
-                      if (product.useFillLevel) {
-                        await _shoppingList.updateProductFillLevel(
-                          existing.id!,
-                          originalFillLevel ?? 1.0,
-                        );
-                      } else {
-                        await _shoppingList.updateProductQuantity(
-                          existing.id!,
-                          existing.quantity - newQuantity,
-                        );
-                      }
-                    }
-                  }
-                  await _refreshShoppingList();
-                },
-              ),
-              duration: const Duration(seconds: 2), // 2 Sekunden
+              content: Text("Added to Inventory"),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -368,13 +327,45 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     }
   }
 
+  Future<void> _addManualShoppingProduct() async {
+    final categories = await _shoppingList.getCategories();
+    final categoryOptions = categories.map((c) => c.name).toList();
+    final productData = await showDialog<ProductData>(
+      context: context,
+      builder:
+          (context) => AddProductDialog(
+            categories: categoryOptions,
+            selectedCategory: null,
+            disableFillLevel: true,
+          ),
+    );
+    if (productData != null && mounted) {
+      await _shoppingList.addToShoppingList(
+        productData.name,
+        productData.quantity,
+        productData.category,
+      );
+      await _refreshShoppingList();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Added to Shopping List")));
+      }
+    }
+  }
+
   Future<void> _deleteShoppingProduct(Product product) async {
-    final inventoryProducts = await _shoppingList.getInventoryProducts();
     final isManual =
-        product.id != null && !inventoryProducts.any((p) => p.id == product.id);
+        product.id != null &&
+        !_inventoryProducts.any((p) => p.id == product.id);
     if (isManual && product.id != null) {
       await _shoppingList.removeFromShoppingList(product.id!);
       await _refreshShoppingList();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Deleted from Shopping List")));
+      }
     }
   }
 

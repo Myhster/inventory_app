@@ -1,6 +1,5 @@
 import 'package:inventory_app/models/product.dart';
 import 'package:inventory_app/services/inventory_manager.dart';
-import 'package:flutter/foundation.dart' as foundation;
 import 'package:inventory_app/models/category.dart';
 
 import 'dart:math';
@@ -18,11 +17,8 @@ class ShoppingList {
     final thresholdProducts =
         inventoryProducts.where((product) {
           if (product.useFillLevel) {
-            final fillLevel = roundToPrecision(product.fillLevel ?? 1.0, 1);
-            final threshold = roundToPrecision(product.threshold ?? 0.2, 1);
-            foundation.debugPrint(
-              "Product: ${product.name}, fillLevel: $fillLevel, threshold: $threshold, <=: ${fillLevel <= threshold}",
-            );
+            final fillLevel = product.fillLevel ?? 1.0;
+            final threshold = product.threshold ?? 0.2;
             return fillLevel <= threshold;
           } else {
             return product.quantity <= (product.threshold?.toInt() ?? 0);
@@ -52,7 +48,7 @@ class ShoppingList {
   Future<void> moveToInventory(Product product, int newQuantity) async {
     final existing = await _manager.getProducts();
     final inventoryProduct = existing.firstWhere(
-      (p) => p.name == product.name,
+      (p) => p.name == product.name && p.category == product.category,
       orElse:
           () => Product(
             name: product.name,
@@ -89,8 +85,7 @@ class ShoppingList {
       );
     }
 
-    final isManual = !existing.any((p) => p.id == product.id);
-    if (isManual && product.id != null) {
+    if (product.id != null && !existing.any((p) => p.id == product.id)) {
       await _manager.removeShoppingItem(product.id!);
     }
   }
