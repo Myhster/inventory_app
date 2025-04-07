@@ -44,35 +44,46 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Product Settings"),
+      title: Text(
+        "Product Settings",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              decoration: const InputDecoration(labelText: "Name"),
+          decoration: InputDecoration(
+            labelText: "Name",
+            hintText: "Enter product name",
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
               controller: TextEditingController(text: _name),
               onChanged: (value) => _name = value,
             ),
+        SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _category,
-              decoration: const InputDecoration(labelText: "Category"),
-              items:
-                  widget.categories
-                      .map(
-                        (cat) => DropdownMenuItem(
-                          value: cat.name,
-                          child: Text(cat.name),
-                        ),
-                      )
+          decoration: InputDecoration(
+            labelText: "Category",
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          items: widget.categories
+              .map((cat) => DropdownMenuItem(value: cat.name, child: Text(cat.name)))
                       .toList(),
               onChanged:
                   (value) => setState(() => _category = value ?? _category),
             ),
+        SizedBox(height: 16),
             if (!_useFillLevel)
-              Text("Current Quantity: ${widget.product.quantity}"),
+          Text("Current Quantity: ${widget.product.quantity}", style: TextStyle(fontSize: 16)),
+        SizedBox(height: 8),
             SwitchListTile(
-              title: const Text("Use Fill Level"),
+          title: Text("Use Fill Level", style: TextStyle(fontSize: 16)),
               value: _useFillLevel,
               onChanged:
                   (value) => setState(() {
@@ -84,16 +95,15 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                       _threshold = 0.2;
                     }
                   }),
+          activeColor: Colors.teal,
             ),
-            if (!_useFillLevel)
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          decoration: const InputDecoration(
+        if (!_useFillLevel) ...[
+          SizedBox(height: 8),
+          TextField(
+            decoration: InputDecoration(
                             labelText: "Quantity Threshold",
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           ),
                           keyboardType: TextInputType.numberWithOptions(
                             decimal: false,
@@ -106,9 +116,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                             if (parsed != null) _threshold = parsed.toDouble();
                           },
                         ),
-                      ),
-                    ],
-                  ),
+          SizedBox(height: 8),
                   Row(
                     children: [
                       Checkbox(
@@ -118,16 +126,13 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                               () => _threshold = value! ? null : 1.0,
                             ),
                       ),
-                      const Text("No Shopping List"),
+              Text("No Shopping List", style: TextStyle(fontSize: 14)),
                     ],
                   ),
                 ],
-              ),
-
-            if (_useFillLevel)
-              Column(
-                children: [
-                  const Text("Fill Level:"),
+        if (_useFillLevel) ...[
+          SizedBox(height: 8),
+          Text("Fill Level:", style: TextStyle(fontSize: 16)),
                   Slider(
                     value: _fillLevel ?? 1.0,
                     min: 0.0,
@@ -135,8 +140,9 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                     divisions: 10,
                     label: _fillLevel?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _fillLevel = value),
+            activeColor: Colors.teal,
                   ),
-                  const Text("Threshold:"),
+          Text("Threshold:", style: TextStyle(fontSize: 16)),
                   Slider(
                     value: _threshold ?? 0.2,
                     min: 0.2,
@@ -144,41 +150,38 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
                     divisions: _useFillLevel ? 3 : 4,
                     label: _threshold?.toStringAsFixed(1),
                     onChanged: (value) => setState(() => _threshold = value),
+            activeColor: Colors.teal,
                   ),
+          SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           "Fill: ${_fillLevel?.toStringAsFixed(1) ?? '1.0'}, Threshold: ${_threshold?.toStringAsFixed(1) ?? '0.2'}",
+                  style: TextStyle(fontSize: 14),
                         ),
                       ),
                       Checkbox(
                         value: _threshold == null,
-                        onChanged:
-                            (value) => setState(
-                              () =>
-                                  _threshold =
-                                      value!
-                                          ? null
-                                          : (_useFillLevel ? 0.2 : 1.0),
-                            ),
+                onChanged: (value) => setState(() => _threshold = value! ? null : (_useFillLevel ? 0.2 : 1.0)),
+                activeColor: Colors.teal,
                       ),
-                      const Text("No Shopping List"),
+              Text("No Shopping List", style: TextStyle(fontSize: 14)),
                     ],
                   ),
                 ],
-              ),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+      child: Text("Cancel", style: TextStyle(color: Colors.grey[600])),
         ),
-        TextButton(
-          onPressed: () async {
-            if (_name.trim().isEmpty) return;
+    ElevatedButton(
+      onPressed: _name.trim().isEmpty
+          ? null
+          : () async {
             await widget.manager.updateProductSettings(
               widget.product.id!,
               _category,
@@ -190,7 +193,7 @@ class ProductSettingsDialogState extends State<ProductSettingsDialog> {
             widget.onRefresh();
             if (mounted) Navigator.pop(context);
           },
-          child: const Text("Save"),
+      child: Text("Save"),
         ),
       ],
     );

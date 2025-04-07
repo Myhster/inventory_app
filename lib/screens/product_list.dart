@@ -87,20 +87,25 @@ class _ProductListState extends State<ProductList> {
                 Expanded(
                   child: Text(
                     category,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.add, size: 20),
+                  icon: Icon(Icons.add_circle, color: Colors.teal),
                   onPressed: () => _addProductToCategory(category),
                 ),
               ],
             ),
             backgroundColor: lightColor,
             collapsedBackgroundColor: lightColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            childrenPadding: EdgeInsets.only(bottom: 8),
             initiallyExpanded: globalExpandedState[category] ?? true,
             onExpansionChanged: (expanded) {
               setState(() {
@@ -160,29 +165,30 @@ class _ProductListState extends State<ProductList> {
 
     return ListTile(
       key: ValueKey(product.id),
-      leading: IconButton(
-        icon: const Icon(Icons.drag_handle),
-        onPressed: () {},
-      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      tileColor: Colors.white,
+      leading: Icon(Icons.drag_indicator, color: Colors.grey[600]),
       title: Text(
         product.name,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
       ),
       subtitle: GestureDetector(
         onTap: () => _editProductValue(product, context),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration:
               isBelowThreshold
                   ? BoxDecoration(
                     color: Colors.red[300],
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   )
-                  : null,
+                  : BoxDecoration(),
           child: Text(
             product.useFillLevel
                 ? "Fill: ${product.fillLevel?.toStringAsFixed(1) ?? '1.0'}"
                 : "Qty: ${product.quantity}",
+            style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
         ),
       ),
@@ -190,9 +196,7 @@ class _ProductListState extends State<ProductList> {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.remove),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            icon: Icon(Icons.remove_circle_outline, color: Colors.red[400]),
             onPressed:
                 () =>
                     product.useFillLevel
@@ -200,9 +204,7 @@ class _ProductListState extends State<ProductList> {
                         : _updateQuantity(product, -1),
           ),
           IconButton(
-            icon: const Icon(Icons.add),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            icon: Icon(Icons.add_circle_outline, color: Colors.green[400]),
             onPressed:
                 () =>
                     product.useFillLevel
@@ -210,9 +212,7 @@ class _ProductListState extends State<ProductList> {
                         : _updateQuantity(product, 1),
           ),
           IconButton(
-            icon: const Icon(Icons.settings),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            icon: Icon(Icons.settings, color: Colors.grey[600]),
             onPressed: () => _openSettings(product, context),
           ),
           IconButton(

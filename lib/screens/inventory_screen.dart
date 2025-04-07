@@ -153,6 +153,12 @@ class InventoryScreenState extends State<InventoryScreen> {
         ),
       );
       await _refreshData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Product '${productData.name}' added"),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
