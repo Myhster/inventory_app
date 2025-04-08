@@ -8,7 +8,7 @@ void main() {
       "id": 1,
       "title": "Fjallraven Backpack",
       "price": 109.95,
-      'category': "men\'s clothing",
+      'category': "men's clothing",
     };
 
     // Act
@@ -20,5 +20,13 @@ void main() {
     expect(product.price, 109.95);
     expect(product.category, 'men\'s clothing');
     expect(product.quantity, 1);
+  });
+
+  test('Product.fromJson throws exception for invalid JSON', () {
+    // Arrange
+    final json = {'id': 'invalid'};
+
+    // Act & Assert
+    expect(() => Product.fromJson(json), throwsA(isA<TypeError>()));
   });
 }
