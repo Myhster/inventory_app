@@ -16,12 +16,12 @@ void main() {
 
       await dbService.initDatabase();
       final id = await dbService.insertProduct(product);
-      final saveProduct = await dbService.getProduct(id);
+      final saveProduct = await dbService.getProducts();
 
       expect(id, isNotNull);
-      expect(saveProduct.name, product.name);
-      expect(saveProduct.quantity, product.quantity);
-      expect(saveProduct.category, product.category);
+      expect(saveProduct.first.name, product.name);
+      expect(saveProduct.first.quantity, product.quantity);
+      expect(saveProduct.first.category, product.category);
     });
   });
 }
