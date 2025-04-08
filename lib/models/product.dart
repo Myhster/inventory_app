@@ -4,6 +4,7 @@ class Product {
   final int quantity;
   final String category;
   final int orderIndex;
+  final double? price;
   final double? threshold;
   final bool useFillLevel;
   final double? fillLevel;
@@ -14,10 +15,21 @@ class Product {
     int? quantity,
     required this.category,
     this.orderIndex = 0,
+    this.price,
     this.threshold = 0.0,
     this.useFillLevel = false,
     this.fillLevel,
   }) : quantity = useFillLevel ? 1 : (quantity ?? 0);
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      id: json['id'],
+      name: json['title'],
+      quantity: 1,
+      category: json['category'],
+      price: json['price'].toDouble(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
