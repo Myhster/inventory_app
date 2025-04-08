@@ -38,7 +38,6 @@ class _ProductListState extends State<ProductList> {
   @override
   void initState() {
     super.initState();
-    // Initialisiere globalExpandedState für alle Kategorien, falls nicht vorhanden
     for (var category in widget.categories) {
       globalExpandedState.putIfAbsent(category.name, () => true);
     }

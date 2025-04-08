@@ -306,27 +306,6 @@ class ShoppingListScreenState extends State<ShoppingListScreen> {
     }
   }
 
-  Future<void> _addShoppingProduct() async {
-    final categories = await _shoppingList.getCategories();
-    final productData = await showDialog<ProductData>(
-      context: context,
-      builder:
-          (context) => AddProductDialog(
-            categories: categories.map((c) => c.name).toList(),
-          ),
-    );
-    if (productData != null && mounted) {
-      final validatedQuantity =
-          productData.quantity < 1 ? 1 : productData.quantity;
-      await _shoppingList.addToShoppingList(
-        productData.name,
-        validatedQuantity,
-        productData.category,
-      );
-      await _refreshShoppingList();
-    }
-  }
-
   Future<void> _addManualShoppingProduct() async {
     final categories = await _shoppingList.getCategories();
     final categoryOptions = categories.map((c) => c.name).toList();
